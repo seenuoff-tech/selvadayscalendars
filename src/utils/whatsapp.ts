@@ -21,8 +21,11 @@ export function generateWhatsAppUrl(order: Order, recipientPhone?: string): stri
   const encoded = encodeURIComponent(text);
 
   if (recipientPhone && recipientPhone.trim().length >= 8) {
-    const cleanNum = recipientPhone.replace(/[^0-9]/g, '');
-    return `https://wa.me/${cleanNum}?text=${encoded}`;
+    let cleanNum = recipientPhone.replace(/[^0-9]/g, '');
+    if (cleanNum.length === 10) {
+      cleanNum = `91${cleanNum}`;
+    }
+    return `https://api.whatsapp.com/send?phone=${cleanNum}&text=${encoded}`;
   }
 
   return `https://api.whatsapp.com/send?text=${encoded}`;

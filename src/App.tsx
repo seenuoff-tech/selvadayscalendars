@@ -168,8 +168,15 @@ export default function App() {
         setIsOrderModalOpen(false);
         setQuantities({});
         fetchOrders();
-        // Automatically redirect / open WhatsApp with formatted order details
-        openWhatsAppForOrder(data.order);
+        // Automatically redirect / open WhatsApp with target phone number
+        try {
+          const settingsRes = await fetch('/api/settings');
+          const settingsData = await settingsRes.json();
+          const targetPhone = settingsData?.settings?.whatsappNumber || '9080917850';
+          openWhatsAppForOrder(data.order, targetPhone);
+        } catch {
+          openWhatsAppForOrder(data.order, '9080917850');
+        }
       } else {
         throw new Error(data.message || 'Failed to submit order');
       }
