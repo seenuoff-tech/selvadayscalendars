@@ -254,6 +254,26 @@ app.post("/api/orders", (req, res) => {
   res.json({ success: true, order: newOrder });
 });
 
+// PUT update order status
+app.put("/api/orders/:id/status", (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  const idx = memoryOrders.findIndex(o => o.id === id);
+  if (idx !== -1) {
+    memoryOrders[idx].status = status;
+    res.json({ success: true, order: memoryOrders[idx] });
+  } else {
+    res.status(404).json({ success: false, message: "Order not found" });
+  }
+});
+
+// DELETE order
+app.delete("/api/orders/:id", (req, res) => {
+  const { id } = req.params;
+  memoryOrders = memoryOrders.filter(o => o.id !== id);
+  res.json({ success: true, message: "Order deleted successfully" });
+});
+
 // GET media
 app.get("/api/media", (_req, res) => {
   try {
