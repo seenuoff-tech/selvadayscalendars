@@ -1,5 +1,5 @@
-import React from 'react';
-import { CheckCircle2, Printer, PlusCircle, Calendar, Phone, MapPin, User, Hash, MessageCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CheckCircle2, Printer, PlusCircle, Calendar, Phone, MapPin, User, Hash, MessageCircle, X } from 'lucide-react';
 import { Order } from '../types';
 import { openWhatsAppForOrder } from '../utils/whatsapp';
 
@@ -9,6 +9,19 @@ interface OrderSuccessModalProps {
 }
 
 export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onClose }) => {
+  const [adminPhone, setAdminPhone] = useState<string>("9080917850");
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.settings && data.settings.whatsappNumber) {
+          setAdminPhone(data.settings.whatsappNumber);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
   if (!order) return null;
 
   const handlePrint = () => {
@@ -16,15 +29,28 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
   };
 
   const handleSendWhatsApp = () => {
-    openWhatsAppForOrder(order);
+    // Check if the number has a country code. If not, default to +91 (India) since the default number is 9080917850
+    let phoneToUse = adminPhone;
+    if (phoneToUse && phoneToUse.length === 10) {
+      phoneToUse = `91${phoneToUse}`;
+    }
+    openWhatsAppForOrder(order, phoneToUse);
   };
 
   return (
     <div id="order-success-modal-backdrop" className="fixed inset-0 z-50 bg-[#0C8D99]/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto print:shadow-none print:border-none print:max-w-none print:w-full">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto print:shadow-none print:border-none print:max-w-none print:w-full relative">
         
+        {/* Close Button */}
+        <button 
+          onClick={onClose} 
+          className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-white transition-colors print:hidden"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
         {/* Success Banner */}
-        <div className="bg-emerald-600 text-white p-6 text-center print:bg-white print:text-black">
+        <div className="bg-emerald-600 text-white p-6 text-center print:bg-white print:text-black pt-8">
           <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 print:hidden">
             <CheckCircle2 className="w-9 h-9 text-white" />
           </div>

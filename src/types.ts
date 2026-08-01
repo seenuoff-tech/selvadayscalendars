@@ -58,3 +58,7 @@ export interface BulkUploadRow {
   description?: string;
   category?: string;
 }
+
+export interface StoreSettings {
+  whatsappNumber: string;
+}

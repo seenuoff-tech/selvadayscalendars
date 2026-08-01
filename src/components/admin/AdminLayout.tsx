@@ -10,7 +10,8 @@ import { OrderManagement } from './OrderManagement';
 import { BulkUploadModal } from './BulkUploadModal';
 import { CategoryManagement } from './CategoryManagement';
 import { MediaManagement } from './MediaManagement';
-import { Image as ImageIcon } from 'lucide-react';
+import { SettingsPanel } from './SettingsPanel';
+import { Image as ImageIcon, Settings as SettingsIcon } from 'lucide-react';
 
 interface AdminLayoutProps {
   products: Product[];
@@ -29,7 +30,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   onLogout,
   onExitToStore,
 }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'categories' | 'orders' | 'bulk' | 'media'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'categories' | 'orders' | 'bulk' | 'media' | 'settings'>('dashboard');
 
   const navItemClass = (isActive: boolean) => 
     `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
@@ -85,6 +86,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             <span>Bulk Excel</span>
           </button>
 
+          <button onClick={() => setActiveTab('settings')} className={navItemClass(activeTab === 'settings')}>
+            <SettingsIcon className="w-5 h-5" />
+            <span>Settings</span>
+          </button>
+
         </div>
 
       </aside>
@@ -108,43 +114,44 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="max-w-6xl mx-auto pb-16">
             {activeTab === 'dashboard' && (
-              <AdminDashboard
-                products={products}
-                orders={orders}
-                onNavigateTab={(tab) => setActiveTab(tab)}
+              <AdminDashboard 
+                products={products} 
+                orders={orders} 
+                onNavigateTab={setActiveTab} 
               />
             )}
-
             {activeTab === 'products' && (
-              <ProductManagement
-                products={products}
+              <ProductManagement 
+                products={products} 
                 categories={categories}
-                onRefresh={onRefresh}
+                onRefresh={onRefresh} 
               />
             )}
-
             {activeTab === 'categories' && (
-              <CategoryManagement
-                categories={categories}
-                onRefresh={onRefresh}
+              <CategoryManagement 
+                categories={categories} 
+                onRefresh={onRefresh} 
               />
             )}
-
             {activeTab === 'orders' && (
-              <OrderManagement
-                orders={orders}
-                onRefresh={onRefresh}
+              <OrderManagement 
+                orders={orders} 
+                onRefresh={onRefresh} 
               />
             )}
-
             {activeTab === 'bulk' && (
-              <BulkUploadModal
-                onSuccess={onRefresh}
+              <BulkUploadModal 
+                onSuccess={() => {
+                  onRefresh();
+                  setActiveTab('products');
+                }} 
               />
             )}
-
             {activeTab === 'media' && (
               <MediaManagement />
+            )}
+            {activeTab === 'settings' && (
+              <SettingsPanel />
             )}
           </div>
         </main>

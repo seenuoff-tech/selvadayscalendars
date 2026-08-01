@@ -153,6 +153,11 @@ export const MediaManagement: React.FC = () => {
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <ImageIcon className="w-6 h-6 text-[#0C8D99]" />
             Media Library
+            {!isLoading && (
+              <span className="ml-2 px-2.5 py-0.5 rounded-full bg-[#0C8D99]/10 text-[#0C8D99] text-xs font-semibold">
+                {media.length} Images
+              </span>
+            )}
           </h2>
           <p className="text-sm text-slate-500 mt-1">
             Upload and manage images. Copy the URL to use in products.

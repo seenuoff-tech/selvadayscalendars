@@ -375,7 +375,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                         <img
                           src={product.imageUrl}
                           alt={product.name}
-                          className="w-14 h-14 object-cover rounded-xl border border-slate-200 mx-auto bg-slate-100 shadow-2xs"
+                          className="w-14 h-14 object-contain rounded-xl border border-slate-200 mx-auto bg-slate-50 shadow-2xs"
                         />
                       </td>
 
@@ -590,7 +590,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                   {/* Image Preview Box */}
                   {imagePreview && (
                     <div className="p-2 border border-slate-200 rounded-xl bg-slate-50 flex items-center space-x-3">
-                      <img src={imagePreview} alt="Preview" className="w-16 h-16 object-cover rounded-lg border border-slate-200" />
+                      <img src={imagePreview} alt="Preview" className="w-16 h-16 object-contain bg-slate-50 rounded-lg border border-slate-200" />
                       <div className="text-xs text-slate-600">
                         <span className="font-bold text-slate-800 block">Thumbnail Preview</span>
                         <span className="text-[11px] text-emerald-600 flex items-center gap-1 mt-0.5">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FileSpreadsheet, Download, Upload, CheckCircle2, AlertCircle,
   Loader2, RefreshCw, Layers, Eye
@@ -12,12 +12,24 @@ interface BulkUploadModalProps {
 
 export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ onSuccess }) => {
   const [parsedRows, setParsedRows] = useState<BulkUploadRow[]>([]);
+  const [mediaLibraryImages, setMediaLibraryImages] = useState<string[]>([]);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [replaceExisting, setReplaceExisting] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [fileName, setFileName] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
+
+  useEffect(() => {
+    fetch('/api/media')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.media) {
+          setMediaLibraryImages(data.media.map((m: any) => m.name.toLowerCase()));
+        }
+      })
+      .catch(err => console.error("Error fetching media library", err));
+  }, []);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -56,25 +68,45 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ onSuccess }) =
     setSuccessMessage('');
 
     try {
-      // Pre-process images into Base64 strings
+      // Pre-process images into Base64 strings or Media Library URLs
       const updatedRows = await Promise.all(
         parsedRows.map(async (row) => {
           let imageUrl = row.imageUrl || '/placeholder-image.png';
 
-          if (row.imageFilename && selectedImages.length > 0) {
-            // Find the image file that exactly matches the filename
-            const matchedFile = selectedImages.find(
-              (f) => f.name.toLowerCase() === row.imageFilename?.toLowerCase()
-            );
+          if (row.imageFilename) {
+            const safeFilename = row.imageFilename.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+            const lowerSafeFilename = safeFilename.toLowerCase();
+            
+            // Helper to get base name by stripping extensions
+            const getBaseName = (name: string) => {
+              // Strip up to two extensions to handle cases like .jpeg.jpeg
+              let base = name.toLowerCase();
+              base = base.replace(/\.[a-z0-9]+$/i, '');
+              base = base.replace(/\.[a-z0-9]+$/i, '');
+              return base;
+            };
+            
+            const targetBase = getBaseName(lowerSafeFilename);
 
-            if (matchedFile) {
-              // Convert to base64
-              imageUrl = await new Promise<string>((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.onerror = () => resolve('/placeholder-image.png');
-                reader.readAsDataURL(matchedFile);
-              });
+            // First check media library with fuzzy matching
+            const matchedMedia = mediaLibraryImages.find(m => getBaseName(m) === targetBase);
+            
+            if (matchedMedia) {
+              imageUrl = `/media/${matchedMedia}`;
+            } else if (selectedImages.length > 0) {
+              // Fallback to selected images if they still use it
+              const matchedFile = selectedImages.find(
+                (f) => getBaseName(f.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")) === targetBase
+              );
+
+              if (matchedFile) {
+                imageUrl = await new Promise<string>((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result as string);
+                  reader.onerror = () => resolve('/placeholder-image.png');
+                  reader.readAsDataURL(matchedFile);
+                });
+              }
             }
           }
 
@@ -151,7 +183,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ onSuccess }) =
       )}
 
       {/* File Drag & Drop Upload Zone */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <div className="border-2 border-dashed border-indigo-200 hover:border-indigo-500 bg-indigo-50/30 rounded-2xl p-8 text-center transition-colors relative">
           <input
             type="file"
@@ -171,29 +203,6 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ onSuccess }) =
               )}
             </div>
             <p className="text-xs text-slate-400">Step 1: Upload the data file</p>
-          </div>
-        </div>
-
-        <div className="border-2 border-dashed border-emerald-200 hover:border-emerald-500 bg-emerald-50/30 rounded-2xl p-8 text-center transition-colors relative">
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          />
-          <div className="flex flex-col items-center justify-center space-y-2">
-            <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
-              <Upload className="w-6 h-6" />
-            </div>
-            <div className="text-sm font-semibold text-slate-800">
-              {selectedImages.length > 0 ? (
-                <span className="text-emerald-700 font-bold">Selected: {selectedImages.length} images</span>
-              ) : (
-                <span>Upload Product Images</span>
-              )}
-            </div>
-            <p className="text-xs text-slate-400">Step 2: Select all images at once</p>
           </div>
         </div>
       </div>
@@ -272,16 +281,29 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ onSuccess }) =
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {parsedRows.map((row, idx) => {
-                    const hasImage = row.imageFilename && selectedImages.some(f => f.name.toLowerCase() === row.imageFilename?.toLowerCase());
+                    const getBaseName = (name: string) => {
+                      let base = name.toLowerCase();
+                      base = base.replace(/\.[a-z0-9]+$/i, '');
+                      base = base.replace(/\.[a-z0-9]+$/i, '');
+                      return base;
+                    };
+                    
+                    const safeFilename = row.imageFilename ? row.imageFilename.replace(/[^a-zA-Z0-9.\-_]/g, "_").toLowerCase() : '';
+                    const targetBase = getBaseName(safeFilename);
+                    
+                    const hasImage = row.imageFilename && (
+                      mediaLibraryImages.some(m => getBaseName(m) === targetBase) || 
+                      selectedImages.some(f => getBaseName(f.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")) === targetBase)
+                    );
                     return (
                     <tr key={idx} className="hover:bg-slate-50">
                       <td className="py-2 px-3 text-slate-500">{row.sno || idx + 1}</td>
                       <td className="py-2 px-3 font-semibold text-slate-900">{row.productName}</td>
                       <td className="py-2 px-3">
                         {hasImage ? (
-                          <span className="text-emerald-600 font-bold text-xs bg-emerald-50 px-2 py-1 rounded">Matched</span>
+                          <span className="text-emerald-600 font-bold text-xs bg-emerald-50 px-2 py-1 rounded">Found in Media Library</span>
                         ) : row.imageFilename ? (
-                          <span className="text-red-500 text-xs">Missing: {row.imageFilename}</span>
+                          <span className="text-red-500 text-xs">Missing from Media Library: {row.imageFilename}</span>
                         ) : (
                           <span className="text-slate-400 text-xs">No image req.</span>
                         )}

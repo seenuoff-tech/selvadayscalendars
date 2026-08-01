@@ -20,6 +20,7 @@ interface DBData {
   orders: Order[];
   categories: Category[];
   adminPasswordHash?: string;
+  settings?: { whatsappNumber: string };
 }
 
 const defaultCategories: Category[] = [
@@ -168,10 +169,11 @@ function initDB(): DBData {
     if (!data.products) data.products = defaultProducts;
     if (!data.orders) data.orders = [];
     if (!data.categories) data.categories = defaultCategories;
+    if (!data.settings) data.settings = { whatsappNumber: "9080917850" };
     return data;
   } catch (err) {
     console.error("Error reading DB file, creating fresh DB:", err);
-    const initialData: DBData = { products: defaultProducts, orders: [], categories: defaultCategories };
+    const initialData: DBData = { products: defaultProducts, orders: [], categories: defaultCategories, settings: { whatsappNumber: "9080917850" } };
     fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), "utf-8");
     return initialData;
   }
@@ -205,6 +207,23 @@ app.post("/api/auth/login", (req, res) => {
   } else {
     res.status(401).json({ success: false, message: "Invalid admin credentials." });
   }
+});
+
+// GET settings
+app.get("/api/settings", (req, res) => {
+  const db = initDB();
+  res.json({ success: true, settings: db.settings });
+});
+
+// POST update settings
+app.post("/api/settings", (req, res) => {
+  const db = initDB();
+  const { whatsappNumber } = req.body;
+  if (whatsappNumber !== undefined) {
+    db.settings = { whatsappNumber };
+    writeDB(db);
+  }
+  res.json({ success: true, settings: db.settings });
 });
 
 // GET products
@@ -495,7 +514,7 @@ app.delete("/api/orders/:id", (req, res) => {
 });
 
 // MEDIA ROUTES
-const MEDIA_DIR = path.join(process.cwd(), "Public");
+const MEDIA_DIR = path.join(process.cwd(), "Public", "media");
 
 app.get("/api/media", (req, res) => {
   try {
@@ -506,7 +525,7 @@ app.get("/api/media", (req, res) => {
     // Filter only images
     const images = files.filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f)).map(f => ({
       name: f,
-      url: `/${f}`
+      url: `/media/${f}`
     }));
     // Sort by modified time descending
     images.sort((a, b) => {
@@ -534,7 +553,7 @@ app.post("/api/media", (req, res) => {
     const filePath = path.join(MEDIA_DIR, safeFilename);
 
     fs.writeFileSync(filePath, base64Data, 'base64');
-    res.json({ success: true, message: "Image uploaded successfully", url: `/${safeFilename}` });
+    res.json({ success: true, message: "Image uploaded successfully", url: `/media/${safeFilename}` });
   } catch (err) {
     res.status(500).json({ success: false, message: "Error uploading image" });
   }
@@ -544,6 +563,12 @@ app.delete("/api/media/:filename", (req, res) => {
   try {
     const { filename } = req.params;
     const safeFilename = path.basename(filename); // Prevent directory traversal
+    
+    // Protect logo from being deleted
+    if (safeFilename.toLowerCase().includes('logo')) {
+      return res.status(403).json({ success: false, message: "System logo files cannot be deleted" });
+    }
+
     const filePath = path.join(MEDIA_DIR, safeFilename);
     
     if (fs.existsSync(filePath)) {
@@ -567,6 +592,12 @@ app.post("/api/media/bulk-delete", (req, res) => {
     let deletedCount = 0;
     for (const filename of filenames) {
       const safeFilename = path.basename(filename);
+      
+      // Protect logo from being deleted in bulk
+      if (safeFilename.toLowerCase().includes('logo')) {
+        continue;
+      }
+
       const filePath = path.join(MEDIA_DIR, safeFilename);
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);

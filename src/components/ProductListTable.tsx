@@ -1,5 +1,5 @@
-import React from 'react';
-import { Minus, Plus, SearchX, ImageOff, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Minus, Plus, SearchX, ImageOff, CheckCircle2, X, Maximize2 } from 'lucide-react';
 import { Product } from '../types';
 
 interface ProductListTableProps {
@@ -16,7 +16,9 @@ export const ProductListTable: React.FC<ProductListTableProps> = ({
   searchQuery,
 }) => {
   // Image error state fallback tracker
-  const [failedImages, setFailedImages] = React.useState<Record<string, boolean>>({});
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+  // Lightbox state
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   const handleImageError = (id: string) => {
     setFailedImages((prev) => ({ ...prev, [id]: true }));
@@ -77,15 +79,23 @@ export const ProductListTable: React.FC<ProductListTableProps> = ({
 
                   {/* Column 2: Product Image (80x80 thumbnail) */}
                   <td className="py-3.5 px-3 text-center align-middle">
-                    <div className="w-[80px] h-[80px] min-w-[80px] min-h-[80px] rounded-xl overflow-hidden border border-slate-200 bg-slate-100 mx-auto relative flex items-center justify-center shadow-2xs">
+                    <div 
+                      className="w-[80px] h-[80px] min-w-[80px] min-h-[80px] rounded-xl overflow-hidden border border-slate-200 bg-slate-100 mx-auto relative flex items-center justify-center shadow-2xs group cursor-pointer"
+                      onClick={() => !isImgFailed && setLightboxImage(product.imageUrl)}
+                    >
                       {!isImgFailed ? (
-                        <img
-                          src={product.imageUrl}
-                          alt={product.name}
-                          loading="lazy"
-                          onError={() => handleImageError(product.id)}
-                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                        />
+                        <>
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            loading="lazy"
+                            onError={() => handleImageError(product.id)}
+                            className="w-full h-full object-contain bg-slate-50 transition-transform duration-300 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Maximize2 className="w-5 h-5 text-white" />
+                          </div>
+                        </>
                       ) : (
                         <div className="flex flex-col items-center justify-center text-slate-400 p-1">
                           <ImageOff className="w-5 h-5 mb-0.5" />
@@ -171,6 +181,32 @@ export const ProductListTable: React.FC<ProductListTableProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Full Screen Image Lightbox */}
+      {lightboxImage && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={() => setLightboxImage(null)}
+        >
+          <button 
+            className="absolute top-4 right-4 md:top-6 md:right-6 text-white hover:text-slate-200 bg-white/10 hover:bg-white/20 p-2 md:p-3 rounded-full transition-colors z-[110]"
+            onClick={() => setLightboxImage(null)}
+          >
+            <X className="w-6 h-6 md:w-8 md:h-8" />
+          </button>
+          
+          <div 
+            className="relative max-w-[95vw] max-h-[90vh] flex items-center justify-center animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img 
+              src={lightboxImage} 
+              alt="Full view" 
+              className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl bg-white/5" 
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
