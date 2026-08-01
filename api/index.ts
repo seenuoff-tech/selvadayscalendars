@@ -204,4 +204,66 @@ app.get("/api/media", (_req, res) => {
   }
 });
 
+// POST upload media
+app.post("/api/media", (req, res) => {
+  try {
+    const { filename, base64 } = req.body;
+    if (!filename || !base64) {
+      return res.status(400).json({ success: false, message: "Filename and base64 string are required" });
+    }
+
+    const MEDIA_DIR = path.join(process.cwd(), "Public", "media");
+    if (!fs.existsSync(MEDIA_DIR)) {
+      fs.mkdirSync(MEDIA_DIR, { recursive: true });
+    }
+
+    const safeFilename = filename.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    const base64Data = base64.replace(/^data:image\/\w+;base64,/, "");
+    const filePath = path.join(MEDIA_DIR, safeFilename);
+
+    fs.writeFileSync(filePath, base64Data, 'base64');
+    res.json({ success: true, message: "Image uploaded successfully", url: `/media/${safeFilename}` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Error uploading image" });
+  }
+});
+
+// DELETE media item
+app.delete("/api/media/:filename", (req, res) => {
+  try {
+    const { filename } = req.params;
+    const safeFilename = path.basename(filename);
+    const MEDIA_DIR = path.join(process.cwd(), "Public", "media");
+    const filePath = path.join(MEDIA_DIR, safeFilename);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ success: false, message: "File not found" });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Error deleting file" });
+  }
+});
+
+// POST bulk delete media
+app.post("/api/media/bulk-delete", (req, res) => {
+  try {
+    const { filenames } = req.body;
+    const MEDIA_DIR = path.join(process.cwd(), "Public", "media");
+
+    if (Array.isArray(filenames)) {
+      filenames.forEach(f => {
+        const safe = path.basename(f);
+        const p = path.join(MEDIA_DIR, safe);
+        if (fs.existsSync(p)) fs.unlinkSync(p);
+      });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Error deleting files" });
+  }
+});
+
 export default app;
