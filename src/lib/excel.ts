@@ -5,9 +5,8 @@ import { Product, Order, BulkUploadRow } from '../types';
  * Download a sample Excel template for bulk product upload
  */
 export function downloadSampleExcelTemplate() {
-  const sampleData: BulkUploadRow[] = [
+  const sampleData: Omit<BulkUploadRow, 'sno'>[] = [
     {
-      sno: 1,
       productName: "2026 Desk Spiral Calendar",
       imageFilename: "calendar1.jpg",
       enabled: "TRUE",
@@ -15,7 +14,6 @@ export function downloadSampleExcelTemplate() {
       category: "Desk Calendar"
     },
     {
-      sno: 2,
       productName: "Executive Wall Calendar 2026",
       imageFilename: "wall-cal.png",
       enabled: "TRUE",
@@ -23,7 +21,6 @@ export function downloadSampleExcelTemplate() {
       category: "Wall Calendar"
     },
     {
-      sno: 3,
       productName: "Eco Wooden Stand Tabletop Calendar",
       imageFilename: "wooden.jpg",
       enabled: "TRUE",
@@ -36,7 +33,6 @@ export function downloadSampleExcelTemplate() {
   
   // Set column widths
   worksheet['!cols'] = [
-    { wch: 6 },  // sno
     { wch: 35 }, // productName
     { wch: 20 }, // imageFilename
     { wch: 10 }, // enabled

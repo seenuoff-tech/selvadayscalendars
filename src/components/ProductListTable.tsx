@@ -52,10 +52,9 @@ export const ProductListTable: React.FC<ProductListTableProps> = ({
         <table id="products-table" className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-100/70 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider">
-              <th className="py-3 px-3 text-center w-12 sm:w-16">S.No</th>
-              <th className="py-3 px-3 w-24 text-center">Image</th>
-              <th className="py-3 px-4 min-w-[180px]">Product Name</th>
-              <th className="py-3 px-4 text-center w-36 sm:w-44">Qty</th>
+              <th className="py-3 px-2 sm:px-3 w-16 sm:w-24 text-center">Image</th>
+              <th className="py-3 px-2 sm:px-4">Product Name</th>
+              <th className="py-3 px-2 sm:px-4 text-center w-28 sm:w-44">Qty</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-sm">
@@ -72,15 +71,10 @@ export const ProductListTable: React.FC<ProductListTableProps> = ({
                     isSelected ? 'bg-[#0C8D99]/10' : ''
                   }`}
                 >
-                  {/* Column 1: S.No */}
-                  <td className="py-3.5 px-3 text-center text-slate-600 font-medium text-xs sm:text-sm">
-                    {product.sno}
-                  </td>
-
-                  {/* Column 2: Product Image (80x80 thumbnail) */}
-                  <td className="py-3.5 px-3 text-center align-middle">
+                  {/* Column 1: Product Image (thumbnail) */}
+                  <td className="py-2.5 sm:py-3.5 px-2 sm:px-3 text-center align-middle">
                     <div 
-                      className="w-[80px] h-[80px] min-w-[80px] min-h-[80px] rounded-xl overflow-hidden border border-slate-200 bg-slate-100 mx-auto relative flex items-center justify-center shadow-2xs group cursor-pointer"
+                      className="w-[56px] h-[56px] sm:w-[80px] sm:h-[80px] min-w-[56px] min-h-[56px] sm:min-w-[80px] sm:min-h-[80px] rounded-xl overflow-hidden border border-slate-200 bg-slate-100 mx-auto relative flex items-center justify-center shadow-2xs group cursor-pointer"
                       onClick={() => !isImgFailed && setLightboxImage(product.imageUrl)}
                     >
                       {!isImgFailed ? (
@@ -93,31 +87,31 @@ export const ProductListTable: React.FC<ProductListTableProps> = ({
                             className="w-full h-full object-contain bg-slate-50 transition-transform duration-300 group-hover:scale-105"
                           />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Maximize2 className="w-5 h-5 text-white" />
+                            <Maximize2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                           </div>
                         </>
                       ) : (
                         <div className="flex flex-col items-center justify-center text-slate-400 p-1">
-                          <ImageOff className="w-5 h-5 mb-0.5" />
-                          <span className="text-[9px] leading-none">No image</span>
+                          <ImageOff className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" />
+                          <span className="text-[8px] sm:text-[9px] leading-none">No image</span>
                         </div>
                       )}
                       {isSelected && (
-                        <div className="absolute top-1 right-1 bg-[#0C8D99] text-white p-0.5 rounded-full shadow-xs">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-[#0C8D99] text-white p-0.5 rounded-full shadow-xs">
+                          <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                         </div>
                       )}
                     </div>
                   </td>
 
-                  {/* Column 3: Product Name */}
-                  <td className="py-3.5 px-4 align-middle">
+                  {/* Column 2: Product Name */}
+                  <td className="py-2.5 sm:py-3.5 px-2 sm:px-4 align-middle">
                     <div className="flex flex-col">
-                      <span className="font-semibold text-slate-900 text-sm sm:text-base leading-snug">
+                      <span className="font-semibold text-slate-900 text-xs sm:text-base leading-snug">
                         {product.name}
                       </span>
                       {product.category && (
-                        <span className="inline-flex text-[11px] font-medium text-slate-500 mt-0.5">
+                        <span className="inline-flex text-[10px] sm:text-[11px] font-medium text-slate-500 mt-0.5">
                           {product.category}
                         </span>
                       )}
@@ -129,19 +123,19 @@ export const ProductListTable: React.FC<ProductListTableProps> = ({
                     </div>
                   </td>
 
-                  {/* Column 4: Qty (Number Input) */}
-                  <td className="py-3.5 px-4 align-middle text-center">
-                    <div className="inline-flex items-center justify-center bg-slate-100 rounded-xl border border-slate-300 p-1 shadow-2xs">
+                  {/* Column 3: Qty (Number Input) */}
+                  <td className="py-2.5 sm:py-3.5 px-1 sm:px-4 align-middle text-center">
+                    <div className="inline-flex items-center justify-center bg-slate-100 rounded-lg sm:rounded-xl border border-slate-300 p-0.5 sm:p-1 shadow-2xs">
                       {/* Decrement Button */}
                       <button
                         id={`btn-qty-minus-${product.id}`}
                         type="button"
                         onClick={() => onQtyChange(product.id, Math.max(0, currentQty - 1))}
                         disabled={currentQty <= 0}
-                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center bg-white text-slate-700 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-white active:scale-95 transition-all text-sm font-bold shadow-2xs"
+                        className="w-7 h-7 sm:w-10 sm:h-10 rounded-md sm:rounded-lg flex items-center justify-center bg-white text-slate-700 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-white active:scale-95 transition-all text-xs sm:text-sm font-bold shadow-2xs"
                         aria-label="Decrease quantity"
                       >
-                        <Minus className="w-4 h-4" />
+                        <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
                       </button>
 
                       {/* Number Input (Only positive numbers / 0) */}
@@ -160,7 +154,7 @@ export const ProductListTable: React.FC<ProductListTableProps> = ({
                             onQtyChange(product.id, val);
                           }
                         }}
-                        className="w-12 sm:w-16 text-center text-slate-900 font-bold text-sm sm:text-base bg-transparent focus:outline-none focus:ring-1 focus:ring-[#0C8D99] rounded py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-8 sm:w-16 text-center text-slate-900 font-bold text-xs sm:text-base bg-transparent focus:outline-none focus:ring-1 focus:ring-[#0C8D99] rounded py-0.5 sm:py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
 
                       {/* Increment Button */}
@@ -168,10 +162,10 @@ export const ProductListTable: React.FC<ProductListTableProps> = ({
                         id={`btn-qty-plus-${product.id}`}
                         type="button"
                         onClick={() => onQtyChange(product.id, currentQty + 1)}
-                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center bg-[#0C8D99] hover:bg-[#0a7983] text-white active:scale-95 transition-all text-sm font-bold shadow-2xs"
+                        className="w-7 h-7 sm:w-10 sm:h-10 rounded-md sm:rounded-lg flex items-center justify-center bg-[#0C8D99] hover:bg-[#0a7983] text-white active:scale-95 transition-all text-xs sm:text-sm font-bold shadow-2xs"
                         aria-label="Increase quantity"
                       >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                       </button>
                     </div>
                   </td>

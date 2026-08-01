@@ -143,7 +143,6 @@ export const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onRefr
           <table id="admin-orders-table" className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-100/80 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider">
-                <th className="py-3.5 px-4 w-16 text-center">S.No</th>
                 <th className="py-3.5 px-4">Order # / Date</th>
                 <th className="py-3.5 px-4">Customer Details</th>
                 <th className="py-3.5 px-3 text-center">Place / City</th>
@@ -155,18 +154,13 @@ export const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onRefr
             <tbody className="divide-y divide-slate-100 text-sm">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500 text-xs">
+                  <td colSpan={6} className="py-12 text-center text-slate-500 text-xs">
                     No orders found matching your search.
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order, index) => (
+                filteredOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
-                    
-                    {/* S.No */}
-                    <td className="py-3.5 px-4 text-center font-bold text-slate-600 text-xs align-middle">
-                      {index + 1}
-                    </td>
 
                     {/* Order # & Date */}
                     <td className="py-3.5 px-4 align-middle">
