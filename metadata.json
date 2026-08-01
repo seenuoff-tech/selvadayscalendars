@@ -1,0 +1,6 @@
+{
+  "name": "Calendar Order Portal",
+  "description": "Mobile-first calendar product ordering system with customer checkout and admin dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

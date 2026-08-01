@@ -1,0 +1,54 @@
+{
+  "products": [],
+  "orders": [
+    {
+      "id": "ord-1785335912530",
+      "orderNumber": "ORD-2026-002",
+      "customerName": "seenu g",
+      "mobileNumber": "07894561230",
+      "city": "srivilliputtur",
+      "items": [
+        {
+          "productId": "prod-1",
+          "sno": 1,
+          "productName": "2026 Executive Desk Spiral Calendar",
+          "qty": 11,
+          "unitPrice": 150,
+          "imageUrl": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=300&q=80"
+        }
+      ],
+      "totalQty": 11,
+      "totalPrice": 1650,
+      "status": "Delivered",
+      "createdAt": "2026-07-29T14:38:32.530Z",
+      "notes": "4"
+    },
+    {
+      "id": "ord-101",
+      "orderNumber": "ORD-2026-001",
+      "customerName": "Anand Kumar",
+      "mobileNumber": "9876543210",
+      "city": "Mumbai",
+      "items": [
+        {
+          "productId": "prod-1",
+          "sno": 1,
+          "productName": "2026 Executive Desk Spiral Calendar",
+          "qty": 5,
+          "unitPrice": 150
+        },
+        {
+          "productId": "prod-2",
+          "sno": 2,
+          "productName": "Classic 12-Sheet Wall Hanging Calendar",
+          "qty": 2,
+          "unitPrice": 180
+        }
+      ],
+      "totalQty": 7,
+      "totalPrice": 1110,
+      "status": "Confirmed",
+      "createdAt": "2026-07-29T09:34:52.247Z"
+    }
+  ]
+}
