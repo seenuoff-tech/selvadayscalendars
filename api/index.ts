@@ -1,4 +1,6 @@
 import express from "express";
+import fs from "fs";
+import path from "path";
 import { Product, Order, Category } from "../src/types.js";
 
 const app = express();
@@ -182,6 +184,24 @@ app.post("/api/orders", (req, res) => {
 
   memoryOrders.unshift(newOrder);
   res.json({ success: true, order: newOrder });
+});
+
+// GET media
+app.get("/api/media", (_req, res) => {
+  try {
+    const MEDIA_DIR = path.join(process.cwd(), "Public", "media");
+    if (!fs.existsSync(MEDIA_DIR)) {
+      return res.json({ success: true, media: [] });
+    }
+    const files = fs.readdirSync(MEDIA_DIR);
+    const images = files.filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f)).map(f => ({
+      name: f,
+      url: `/media/${f}`
+    }));
+    res.json({ success: true, media: images });
+  } catch (err) {
+    res.json({ success: true, media: [] });
+  }
 });
 
 export default app;
