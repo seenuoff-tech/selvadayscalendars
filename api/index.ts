@@ -44,11 +44,16 @@ const defaultProducts: Product[] = [
   }
 ];
 
-// In-memory fallback if TiDB env not provided
+// In-memory state for Vercel Serverless
 let memoryProducts: Product[] = [...defaultProducts];
 let memoryOrders: Order[] = [];
 let memoryCategories: Category[] = [...defaultCategories];
 let memorySettings = { whatsappNumber: "9080917850" };
+
+function resequence(products: Product[]): Product[] {
+  products.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  return products.map((p, idx) => ({ ...p, sno: idx + 1, sortOrder: idx + 1 }));
+}
 
 // Admin Authentication
 app.post("/api/auth/login", (req, res) => {
@@ -76,6 +81,7 @@ app.post("/api/settings", (req, res) => {
 
 // GET products
 app.get("/api/products", (_req, res) => {
+  memoryProducts = resequence(memoryProducts);
   res.json({ success: true, products: memoryProducts });
 });
 
@@ -102,7 +108,63 @@ app.post("/api/products", (req, res) => {
   };
 
   memoryProducts.push(newProduct);
-  res.json({ success: true, product: newProduct });
+  memoryProducts = resequence(memoryProducts);
+  res.json({ success: true, product: newProduct, products: memoryProducts });
+});
+
+// POST bulk upload products
+app.post("/api/products/bulk", (req, res) => {
+  const { products, replaceExisting } = req.body;
+
+  if (!Array.isArray(products) || products.length === 0) {
+    return res.status(400).json({ success: false, message: "No products provided" });
+  }
+
+  const newProds: Product[] = products.map((p, idx) => ({
+    id: `prod-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
+    sno: idx + 1,
+    sortOrder: idx + 1,
+    name: p.productName || p.name || `Calendar Product ${idx + 1}`,
+    price: p.price ? Number(p.price) : 0,
+    imageUrl: p.imageUrl || "/media/image101.jpeg",
+    enabled: p.enabled !== undefined ? (String(p.enabled).toLowerCase() !== "false" && String(p.enabled).toLowerCase() !== "disabled" && Boolean(p.enabled)) : true,
+    description: p.description || "",
+    category: p.category || "Calendar",
+    createdAt: new Date().toISOString()
+  }));
+
+  if (replaceExisting) {
+    memoryProducts = newProds;
+  } else {
+    memoryProducts = [...memoryProducts, ...newProds];
+  }
+
+  memoryProducts = resequence(memoryProducts);
+  res.json({ success: true, message: `Successfully imported ${newProds.length} products!`, products: memoryProducts });
+});
+
+// DELETE bulk products
+app.delete("/api/products/bulk", (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ success: false, message: "No product IDs provided" });
+  }
+
+  const initCount = memoryProducts.length;
+  memoryProducts = memoryProducts.filter(p => !ids.includes(p.id));
+  memoryProducts = resequence(memoryProducts);
+
+  res.json({ success: true, message: `Successfully deleted ${initCount - memoryProducts.length} products`, products: memoryProducts });
+});
+
+// POST toggle enable/disable product
+app.post("/api/products/toggle/:id", (req, res) => {
+  const { id } = req.params;
+  const index = memoryProducts.findIndex(p => p.id === id);
+  if (index !== -1) {
+    memoryProducts[index].enabled = !memoryProducts[index].enabled;
+  }
+  res.json({ success: true, products: memoryProducts });
 });
 
 // PUT update product
@@ -111,17 +173,19 @@ app.put("/api/products/:id", (req, res) => {
   const idx = memoryProducts.findIndex(p => p.id === id);
   if (idx !== -1) {
     memoryProducts[idx] = { ...memoryProducts[idx], ...req.body };
-    res.json({ success: true, product: memoryProducts[idx] });
+    memoryProducts = resequence(memoryProducts);
+    res.json({ success: true, product: memoryProducts[idx], products: memoryProducts });
   } else {
     res.status(404).json({ success: false, message: "Product not found" });
   }
 });
 
-// DELETE product
+// DELETE single product
 app.delete("/api/products/:id", (req, res) => {
   const { id } = req.params;
   memoryProducts = memoryProducts.filter(p => p.id !== id);
-  res.json({ success: true });
+  memoryProducts = resequence(memoryProducts);
+  res.json({ success: true, message: "Product deleted successfully", products: memoryProducts });
 });
 
 // GET categories
