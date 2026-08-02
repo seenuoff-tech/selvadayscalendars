@@ -62,7 +62,7 @@ export default function App() {
   // Fetch Products
   const fetchProducts = useCallback(async (instantProducts?: Product[]) => {
     if (instantProducts && Array.isArray(instantProducts)) {
-      setProducts(instantProducts);
+      setProducts([...instantProducts]);
       return;
     }
     try {
