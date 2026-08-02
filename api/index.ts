@@ -38,40 +38,13 @@ const defaultCategories: Category[] = [
   { id: "cat-6", name: "Magnetic Calendar", sortOrder: 6 }
 ];
 
-const defaultProducts: Product[] = [
-  { id: "prod-1", sno: 1, sortOrder: 1, name: "2026 Desk Spiral Calendar", price: 0, imageUrl: "/media/image122.jpeg", enabled: true, description: "12-month desk calendar with spiral binding", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-2", sno: 2, sortOrder: 2, name: "Executive Wall Calendar 2026", price: 0, imageUrl: "/media/image123.jpeg", enabled: true, description: "Large 12-sheet wall hanging calendar", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-3", sno: 3, sortOrder: 3, name: "Eco Wooden Stand Tabletop Calendar", price: 0, imageUrl: "/media/image124.jpeg", enabled: true, description: "Solid wood block calendar with monthly cards", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-4", sno: 4, sortOrder: 4, name: "Laxmi(Green) 101", price: 0, imageUrl: "/media/image101.jpeg", enabled: true, description: "12-month desk calendar with spiral binding", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-5", sno: 5, sortOrder: 5, name: "Laxmi(Blue) 102", price: 0, imageUrl: "/media/image102.jpeg", enabled: true, description: "Large 12-sheet wall hanging calendar", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-6", sno: 6, sortOrder: 6, name: "Pillaiyar(Red) 103", price: 0, imageUrl: "/media/image103.jpeg", enabled: true, description: "Solid wood block calendar with monthly cards", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-7", sno: 7, sortOrder: 7, name: "Pillaiyar(Blue) 104", price: 0, imageUrl: "/media/image104.jpeg", enabled: true, description: "12-month desk calendar with spiral binding", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-8", sno: 8, sortOrder: 8, name: "Pillaiyar(Megata) 105", price: 0, imageUrl: "/media/image105.jpeg", enabled: true, description: "Large 12-sheet wall hanging calendar", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-9", sno: 9, sortOrder: 9, name: "Tirupathi Laxmi 106", price: 0, imageUrl: "/media/image106.jpeg", enabled: true, description: "Solid wood block calendar with monthly cards", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-10", sno: 10, sortOrder: 10, name: "Tirupathi (Maroon) 107", price: 0, imageUrl: "/media/image107.jpeg", enabled: true, description: "12-month desk calendar with spiral binding", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-11", sno: 11, sortOrder: 11, name: "Tirupathi (Green) 108", price: 0, imageUrl: "/media/image108.jpeg", enabled: true, description: "Large 12-sheet wall hanging calendar", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-12", sno: 12, sortOrder: 12, name: "Murugan Pillaiyar 109", price: 0, imageUrl: "/media/image109.jpeg", enabled: true, description: "Solid wood block calendar with monthly cards", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-13", sno: 13, sortOrder: 13, name: "Saravanan 110", price: 0, imageUrl: "/media/image110.jpeg", enabled: true, description: "12-month desk calendar with spiral binding", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-14", sno: 14, sortOrder: 14, name: "T.Murugan (Purple) 111", price: 0, imageUrl: "/media/image111.jpeg", enabled: true, description: "Large 12-sheet wall hanging calendar", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-15", sno: 15, sortOrder: 15, name: "T.Murugan (Blue) 112", price: 0, imageUrl: "/media/image112.jpeg", enabled: true, description: "Solid wood block calendar with monthly cards", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-16", sno: 16, sortOrder: 16, name: "Palani Murugan 113", price: 0, imageUrl: "/media/image113.jpeg", enabled: true, description: "12-month desk calendar with spiral binding", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-17", sno: 17, sortOrder: 17, name: "Murugan Half 114", price: 0, imageUrl: "/media/image114.jpeg", enabled: true, description: "Large 12-sheet wall hanging calendar", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-18", sno: 18, sortOrder: 18, name: "Murugan Om 115", price: 0, imageUrl: "/media/image115.jpeg", enabled: true, description: "Solid wood block calendar with monthly cards", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-19", sno: 19, sortOrder: 19, name: "Murugan Oti Vaa 116", price: 0, imageUrl: "/media/image116.jpeg", enabled: true, description: "12-month desk calendar with spiral binding", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-20", sno: 20, sortOrder: 20, name: "T.Murugan Arupadai 117", price: 0, imageUrl: "/media/image117.jpeg", enabled: true, description: "Large 12-sheet wall hanging calendar", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-21", sno: 21, sortOrder: 21, name: "P.Murugan Arupadai 118", price: 0, imageUrl: "/media/image118.jpeg", enabled: true, description: "Solid wood block calendar with monthly cards", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-22", sno: 22, sortOrder: 22, name: "Murugan Motivation 119", price: 0, imageUrl: "/media/image119.jpeg", enabled: true, description: "12-month desk calendar with spiral binding", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-23", sno: 23, sortOrder: 23, name: "Vel Murugan 120", price: 0, imageUrl: "/media/image120.jpeg", enabled: true, description: "Large 12-sheet wall hanging calendar", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-24", sno: 24, sortOrder: 24, name: "Siva Family 121", price: 0, imageUrl: "/media/image121.jpeg", enabled: true, description: "Solid wood block calendar with monthly cards", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-25", sno: 25, sortOrder: 25, name: "Jesus 122", price: 0, imageUrl: "/media/image122.jpeg", enabled: true, description: "12-month desk calendar with spiral binding", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-26", sno: 26, sortOrder: 26, name: "Velankanni Matha 123", price: 0, imageUrl: "/media/image123.jpeg", enabled: true, description: "Large 12-sheet wall hanging calendar", category: "Wall Calendar", createdAt: new Date().toISOString() },
-  { id: "prod-27", sno: 27, sortOrder: 27, name: "Mecca Madina 124", price: 0, imageUrl: "/media/image124.jpeg", enabled: true, description: "Solid wood block calendar with monthly cards", category: "Wall Calendar", createdAt: new Date().toISOString() }
-];
+const defaultProducts: Product[] = [];
 
-let memoryProducts: Product[] = [...defaultProducts];
+let memoryProducts: Product[] = [];
 let memoryOrders: Order[] = [];
 let memoryCategories: Category[] = [...defaultCategories];
 let memorySettings = { whatsappNumber: "9080917850" };
+const globalDeletedIds = new Set<string>();
 
 function resequence(products: Product[]): Product[] {
   products.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
