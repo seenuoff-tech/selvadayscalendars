@@ -231,14 +231,29 @@ app.post("/api/categories", (req, res) => {
     sortOrder: memoryCategories.length + 1
   };
   memoryCategories.push(newCat);
-  res.json({ success: true, category: newCat });
+  res.json({ success: true, category: newCat, categories: memoryCategories });
+});
+
+// PUT update category
+app.put("/api/categories/:id", (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  const idx = memoryCategories.findIndex(c => c.id === id);
+  if (idx !== -1) {
+    if (name && name.trim()) {
+      memoryCategories[idx].name = name.trim();
+    }
+    res.json({ success: true, category: memoryCategories[idx], categories: memoryCategories });
+  } else {
+    res.status(404).json({ success: false, message: "Category not found" });
+  }
 });
 
 // DELETE category
 app.delete("/api/categories/:id", (req, res) => {
   const { id } = req.params;
   memoryCategories = memoryCategories.filter(c => c.id !== id);
-  res.json({ success: true });
+  res.json({ success: true, categories: memoryCategories });
 });
 
 // GET orders

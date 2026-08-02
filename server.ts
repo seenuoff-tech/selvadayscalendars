@@ -431,6 +431,65 @@ app.post("/api/products/bulk", (req, res) => {
   res.json({ success: true, message: `Successfully imported ${newProds.length} products`, products: db.products });
 });
 
+// GET categories
+app.get("/api/categories", (req, res) => {
+  const db = initDB();
+  res.json({ success: true, categories: db.categories || [] });
+});
+
+// POST add category
+app.post("/api/categories", (req, res) => {
+  const db = initDB();
+  const { name } = req.body;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ success: false, message: "Category name is required" });
+  }
+
+  const newCat: Category = {
+    id: `cat-${Date.now()}`,
+    name: name.trim(),
+    sortOrder: (db.categories ? db.categories.length : 0) + 1,
+  };
+
+  if (!db.categories) db.categories = [];
+  db.categories.push(newCat);
+  writeDB(db);
+
+  res.json({ success: true, category: newCat, categories: db.categories });
+});
+
+// PUT update category
+app.put("/api/categories/:id", (req, res) => {
+  const db = initDB();
+  const { id } = req.params;
+  const { name } = req.body;
+
+  if (!db.categories) db.categories = [];
+  const idx = db.categories.findIndex((c) => c.id === id);
+
+  if (idx !== -1) {
+    if (name && name.trim()) {
+      db.categories[idx].name = name.trim();
+    }
+    writeDB(db);
+    res.json({ success: true, category: db.categories[idx], categories: db.categories });
+  } else {
+    res.status(404).json({ success: false, message: "Category not found" });
+  }
+});
+
+// DELETE category
+app.delete("/api/categories/:id", (req, res) => {
+  const db = initDB();
+  const { id } = req.params;
+
+  if (!db.categories) db.categories = [];
+  db.categories = db.categories.filter((c) => c.id !== id);
+  writeDB(db);
+
+  res.json({ success: true, categories: db.categories });
+});
+
 // GET orders
 app.get("/api/orders", (req, res) => {
   const db = initDB();
