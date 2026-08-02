@@ -1,12 +1,33 @@
 import express from "express";
 import fs from "fs";
 import path from "path";
+import mysql from "mysql2/promise";
 import { Product, Order, Category } from "../src/types.js";
 
 const app = express();
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
+// TiDB Database Pool Connection setup
+const hasTiDB = Boolean(process.env.TIDB_HOST && process.env.TIDB_USER && process.env.TIDB_PASSWORD);
+
+const pool = hasTiDB
+  ? mysql.createPool({
+      host: process.env.TIDB_HOST,
+      port: Number(process.env.TIDB_PORT) || 4000,
+      user: process.env.TIDB_USER,
+      password: process.env.TIDB_PASSWORD,
+      database: process.env.TIDB_DATABASE || "calendars_db",
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      ssl: {
+        minVersion: "TLSv1.2",
+        rejectUnauthorized: true,
+      },
+    })
+  : null;
 
 const defaultCategories: Category[] = [
   { id: "cat-1", name: "Desk Calendar", sortOrder: 1 },
@@ -17,7 +38,6 @@ const defaultCategories: Category[] = [
   { id: "cat-6", name: "Magnetic Calendar", sortOrder: 6 }
 ];
 
-// Seed all 27 products from db.json as default initial data for Vercel
 const defaultProducts: Product[] = [
   { id: "prod-1", sno: 1, sortOrder: 1, name: "2026 Desk Spiral Calendar", price: 0, imageUrl: "/media/image122.jpeg", enabled: true, description: "12-month desk calendar with spiral binding", category: "Wall Calendar", createdAt: new Date().toISOString() },
   { id: "prod-2", sno: 2, sortOrder: 2, name: "Executive Wall Calendar 2026", price: 0, imageUrl: "/media/image123.jpeg", enabled: true, description: "Large 12-sheet wall hanging calendar", category: "Wall Calendar", createdAt: new Date().toISOString() },
@@ -48,7 +68,6 @@ const defaultProducts: Product[] = [
   { id: "prod-27", sno: 27, sortOrder: 27, name: "Mecca Madina 124", price: 0, imageUrl: "/media/image124.jpeg", enabled: true, description: "Solid wood block calendar with monthly cards", category: "Wall Calendar", createdAt: new Date().toISOString() }
 ];
 
-// In-memory state for Vercel Serverless
 let memoryProducts: Product[] = [...defaultProducts];
 let memoryOrders: Order[] = [];
 let memoryCategories: Category[] = [...defaultCategories];
@@ -70,28 +89,63 @@ app.post("/api/auth/login", (req, res) => {
 });
 
 // GET settings
-app.get("/api/settings", (_req, res) => {
+app.get("/api/settings", async (_req, res) => {
+  if (pool) {
+    try {
+      const [rows]: any = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'whatsappNumber'");
+      if (rows && rows.length > 0) {
+        return res.json({ success: true, settings: { whatsappNumber: rows[0].setting_value } });
+      }
+    } catch (err) {
+      console.error("TiDB error:", err);
+    }
+  }
   res.json({ success: true, settings: memorySettings });
 });
 
 // POST update settings
-app.post("/api/settings", (req, res) => {
+app.post("/api/settings", async (req, res) => {
   const { whatsappNumber } = req.body;
   if (whatsappNumber !== undefined) {
     memorySettings.whatsappNumber = whatsappNumber;
+    if (pool) {
+      try {
+        await pool.query("INSERT INTO settings (setting_key, setting_value) VALUES ('whatsappNumber', ?) ON DUPLICATE KEY UPDATE setting_value = ?", [whatsappNumber, whatsappNumber]);
+      } catch (err) {
+        console.error("TiDB error:", err);
+      }
+    }
   }
   res.json({ success: true, settings: memorySettings });
 });
 
 // GET products
-app.get("/api/products", (_req, res) => {
+app.get("/api/products", async (_req, res) => {
+  if (pool) {
+    try {
+      const [rows]: any = await pool.query("SELECT * FROM products ORDER BY sortOrder ASC, sno ASC");
+      if (rows && Array.isArray(rows) && rows.length > 0) {
+        const formatted = rows.map((r: any, idx: number) => ({
+          ...r,
+          sno: idx + 1,
+          sortOrder: idx + 1,
+          enabled: Boolean(r.enabled),
+          price: Number(r.price) || 0
+        }));
+        memoryProducts = formatted;
+        return res.json({ success: true, products: formatted });
+      }
+    } catch (err) {
+      console.error("TiDB error:", err);
+    }
+  }
   memoryProducts = memoryProducts.filter(p => !globalDeletedIds.has(p.id));
   memoryProducts = resequence(memoryProducts);
   res.json({ success: true, products: memoryProducts });
 });
 
 // POST add product
-app.post("/api/products", (req, res) => {
+app.post("/api/products", async (req, res) => {
   const { name, price, imageUrl, enabled, description, category } = req.body;
 
   if (!name || !name.trim()) {
@@ -114,116 +168,41 @@ app.post("/api/products", (req, res) => {
 
   memoryProducts.push(newProduct);
   memoryProducts = resequence(memoryProducts);
+
+  if (pool) {
+    try {
+      await pool.query(
+        "INSERT INTO products (id, sno, sortOrder, name, price, imageUrl, enabled, description, category, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [newProduct.id, newProduct.sno, newProduct.sortOrder, newProduct.name, newProduct.price, newProduct.imageUrl, newProduct.enabled, newProduct.description, newProduct.category, newProduct.createdAt]
+      );
+    } catch (err) {
+      console.error("TiDB insert error:", err);
+    }
+  }
+
   res.json({ success: true, product: newProduct, products: memoryProducts });
 });
 
-// POST bulk upload products
-app.post("/api/products/bulk", (req, res) => {
-  const { products, replaceExisting } = req.body;
-
-  if (!Array.isArray(products) || products.length === 0) {
-    return res.status(400).json({ success: false, message: "No products provided" });
-  }
-
-  const newProds: Product[] = products.map((p, idx) => ({
-    id: `prod-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
-    sno: idx + 1,
-    sortOrder: idx + 1,
-    name: p.productName || p.name || `Calendar Product ${idx + 1}`,
-    price: p.price ? Number(p.price) : 0,
-    imageUrl: p.imageUrl || "/media/image101.jpeg",
-    enabled: p.enabled !== undefined ? (String(p.enabled).toLowerCase() !== "false" && String(p.enabled).toLowerCase() !== "disabled" && Boolean(p.enabled)) : true,
-    description: p.description || "",
-    category: p.category || "Calendar",
-    createdAt: new Date().toISOString()
-  }));
-
-  if (replaceExisting) {
-    memoryProducts = newProds;
-  } else {
-    memoryProducts = [...memoryProducts, ...newProds];
-  }
-
-  memoryProducts = resequence(memoryProducts);
-  res.json({ success: true, message: `Successfully imported ${newProds.length} products!`, products: memoryProducts });
-});
-
-// DELETE bulk products
-app.delete("/api/products/bulk", (req, res) => {
-  const { ids } = req.body;
-  if (!Array.isArray(ids) || ids.length === 0) {
-    return res.status(400).json({ success: false, message: "No product IDs provided" });
-  }
-
-  const initCount = memoryProducts.length;
-  memoryProducts = memoryProducts.filter(p => !ids.includes(p.id));
-  memoryProducts = resequence(memoryProducts);
-
-  res.json({ success: true, message: `Successfully deleted ${initCount - memoryProducts.length} products`, products: memoryProducts });
-});
-
-// POST bulk delete products (for platforms/proxies that struggle with DELETE body)
-app.post("/api/products/bulk-delete", (req, res) => {
-  const { ids } = req.body;
-  if (!Array.isArray(ids) || ids.length === 0) {
-    return res.status(400).json({ success: false, message: "No product IDs provided" });
-  }
-
-  const initCount = memoryProducts.length;
-  memoryProducts = memoryProducts.filter(p => !ids.includes(p.id));
-  memoryProducts = resequence(memoryProducts);
-
-  res.json({ success: true, message: `Successfully deleted ${initCount - memoryProducts.length} products`, products: memoryProducts });
-});
-
-// POST rearrange products
-app.post("/api/products/rearrange", (req, res) => {
-  const { productIds } = req.body;
-  if (!Array.isArray(productIds)) {
-    return res.status(400).json({ success: false, message: "productIds array is required" });
-  }
-
-  const map = new Map(memoryProducts.map(p => [p.id, p]));
-  const rearranged: Product[] = [];
-
-  productIds.forEach((id, idx) => {
-    const prod = map.get(id);
-    if (prod) {
-      prod.sortOrder = idx + 1;
-      prod.sno = idx + 1;
-      rearranged.push(prod);
-      map.delete(id);
-    }
-  });
-
-  map.forEach(prod => {
-    const nextSort = rearranged.length + 1;
-    prod.sortOrder = nextSort;
-    prod.sno = nextSort;
-    rearranged.push(prod);
-  });
-
-  memoryProducts = rearranged;
-  res.json({ success: true, products: memoryProducts });
-});
-
-// POST toggle enable/disable product
-app.post("/api/products/toggle/:id", (req, res) => {
-  const { id } = req.params;
-  const index = memoryProducts.findIndex(p => p.id === id);
-  if (index !== -1) {
-    memoryProducts[index].enabled = !memoryProducts[index].enabled;
-  }
-  res.json({ success: true, products: memoryProducts });
-});
-
 // PUT update product
-app.put("/api/products/:id", (req, res) => {
+app.put("/api/products/:id", async (req, res) => {
   const { id } = req.params;
+  const { name, price, imageUrl, enabled, description, category } = req.body;
+
   const idx = memoryProducts.findIndex(p => p.id === id);
   if (idx !== -1) {
     memoryProducts[idx] = { ...memoryProducts[idx], ...req.body };
     memoryProducts = resequence(memoryProducts);
+
+    if (pool) {
+      try {
+        await pool.query(
+          "UPDATE products SET name = ?, price = ?, imageUrl = ?, enabled = ?, description = ?, category = ? WHERE id = ?",
+          [memoryProducts[idx].name, memoryProducts[idx].price, memoryProducts[idx].imageUrl, memoryProducts[idx].enabled, memoryProducts[idx].description, memoryProducts[idx].category, id]
+        );
+      } catch (err) {
+        console.error("TiDB update error:", err);
+      }
+    }
     res.json({ success: true, product: memoryProducts[idx], products: memoryProducts });
   } else {
     res.status(404).json({ success: false, message: "Product not found" });
@@ -234,20 +213,38 @@ app.put("/api/products/:id", (req, res) => {
 let globalDeletedIds = new Set<string>();
 
 // DELETE single product
-app.delete("/api/products/:id", (req, res) => {
+app.delete("/api/products/:id", async (req, res) => {
   const { id } = req.params;
   globalDeletedIds.add(id);
   memoryProducts = memoryProducts.filter(p => !globalDeletedIds.has(p.id));
   memoryProducts = resequence(memoryProducts);
+
+  if (pool) {
+    try {
+      await pool.query("DELETE FROM products WHERE id = ?", [id]);
+    } catch (err) {
+      console.error("TiDB delete error:", err);
+    }
+  }
+
   res.json({ success: true, message: "Product deleted successfully", products: memoryProducts });
 });
 
 // POST single delete product fallback
-app.post("/api/products/delete/:id", (req, res) => {
+app.post("/api/products/delete/:id", async (req, res) => {
   const { id } = req.params;
   globalDeletedIds.add(id);
   memoryProducts = memoryProducts.filter(p => !globalDeletedIds.has(p.id));
   memoryProducts = resequence(memoryProducts);
+
+  if (pool) {
+    try {
+      await pool.query("DELETE FROM products WHERE id = ?", [id]);
+    } catch (err) {
+      console.error("TiDB delete error:", err);
+    }
+  }
+
   res.json({ success: true, message: "Product deleted successfully", products: memoryProducts });
 });
 
