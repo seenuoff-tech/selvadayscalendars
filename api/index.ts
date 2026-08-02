@@ -119,26 +119,59 @@ app.post("/api/settings", async (req, res) => {
   res.json({ success: true, settings: memorySettings });
 });
 
+let isDBInitialized = false;
+
+async function ensureDBSeeded() {
+  if (!pool || isDBInitialized) return;
+  try {
+    // Ensure table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id VARCHAR(255) PRIMARY KEY,
+        sno INT,
+        sortOrder INT,
+        name VARCHAR(255) NOT NULL,
+        price DECIMAL(10, 2),
+        imageUrl TEXT,
+        enabled BOOLEAN DEFAULT true,
+        description TEXT,
+        category VARCHAR(255),
+        createdAt DATETIME
+      )
+    `);
+
+    // Check count
+    const [rows]: any = await pool.query("SELECT COUNT(*) as count FROM products");
+    if (rows && rows[0] && rows[0].count === 0) {
+      // Seed default products ONCE
+      for (const p of defaultProducts) {
+        await pool.query(
+          "INSERT IGNORE INTO products (id, sno, sortOrder, name, price, imageUrl, enabled, description, category, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [p.id, p.sno, p.sortOrder, p.name, p.price, p.imageUrl, p.enabled, p.description, p.category, p.createdAt]
+        );
+      }
+    }
+    isDBInitialized = true;
+  } catch (err) {
+    console.error("Failed to seed TiDB:", err);
+  }
+}
+
 // GET products
 app.get("/api/products", async (_req, res) => {
   if (pool) {
     try {
+      await ensureDBSeeded();
       const [rows]: any = await pool.query("SELECT * FROM products ORDER BY sortOrder ASC, sno ASC");
       if (rows && Array.isArray(rows)) {
-        if (rows.length > 0) {
-          const formatted = rows.map((r: any, idx: number) => ({
-            ...r,
-            sno: idx + 1,
-            sortOrder: idx + 1,
-            enabled: Boolean(r.enabled),
-            price: Number(r.price) || 0
-          }));
-          memoryProducts = formatted;
-          return res.json({ success: true, products: formatted });
-        } else {
-          memoryProducts = [];
-          return res.json({ success: true, products: [] });
-        }
+        const formatted = rows.map((r: any, idx: number) => ({
+          ...r,
+          sno: idx + 1,
+          sortOrder: idx + 1,
+          enabled: Boolean(r.enabled),
+          price: Number(r.price) || 0
+        }));
+        return res.json({ success: true, products: formatted });
       }
     } catch (err) {
       console.error("TiDB error:", err);
