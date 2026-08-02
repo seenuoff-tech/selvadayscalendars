@@ -387,6 +387,11 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                         <img
                           src={product.imageUrl}
                           alt={product.name}
+                          onError={(e) => {
+                            // Replace broken image path with a clean missing image placeholder
+                            (e.target as HTMLImageElement).onerror = null;
+                            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=100&q=80";
+                          }}
                           className="w-14 h-14 object-contain rounded-xl border border-slate-200 mx-auto bg-slate-50 shadow-2xs"
                         />
                       </td>
