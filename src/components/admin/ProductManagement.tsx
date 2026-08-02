@@ -224,12 +224,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
       setDeletingProductId(null);
       onRefresh(remainingProducts);
 
-      let res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        res = await fetch(`/api/products/delete/${id}`, { method: 'POST' });
-      }
+      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
       const data = await res.json();
-      if (data.success && data.products) {
+      if (data.success && Array.isArray(data.products)) {
         onRefresh(data.products);
       }
     } catch (err) {
