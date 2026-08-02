@@ -220,6 +220,15 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
   // Delete product
   const handleDeleteProduct = async (id: string) => {
     try {
+      // Track deleted product ID in localStorage permanently
+      try {
+        const deleted = JSON.parse(localStorage.getItem('deleted_product_ids') || '[]');
+        if (!deleted.includes(id)) {
+          deleted.push(id);
+          localStorage.setItem('deleted_product_ids', JSON.stringify(deleted));
+        }
+      } catch (e) {}
+
       const remainingProducts = products.filter(p => p.id !== id);
       setDeletingProductId(null);
       onRefresh(remainingProducts);
@@ -230,7 +239,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
       }
       const data = await res.json();
       if (data.success && Array.isArray(data.products)) {
-        onRefresh(data.products);
+        let deletedIds: string[] = [];
+        try { deletedIds = JSON.parse(localStorage.getItem('deleted_product_ids') || '[]'); } catch (e) {}
+        onRefresh(data.products.filter((p: Product) => !deletedIds.includes(p.id)));
       }
     } catch (err) {
       console.error('Failed to delete product:', err);
@@ -242,13 +253,25 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     if (selectedProductIds.length === 0) return;
 
     try {
+      // Track bulk deleted IDs in localStorage permanently
+      try {
+        const deleted = JSON.parse(localStorage.getItem('deleted_product_ids') || '[]');
+        selectedProductIds.forEach(id => {
+          if (!deleted.includes(id)) deleted.push(id);
+        });
+        localStorage.setItem('deleted_product_ids', JSON.stringify(deleted));
+      } catch (e) {}
+
+      const remainingProducts = products.filter(p => !selectedProductIds.includes(p.id));
+      setSelectedProductIds([]);
+      onRefresh(remainingProducts);
+
       let res = await fetch('/api/products/bulk', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: selectedProductIds })
       });
       
-      // Fallback to POST if DELETE returns non-ok (e.g. proxy issues)
       if (!res.ok) {
         res = await fetch('/api/products/bulk-delete', {
           method: 'POST',
@@ -258,9 +281,10 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
       }
 
       const data = await res.json();
-      if (data.success) {
-        setSelectedProductIds([]);
-        onRefresh(data.products);
+      if (data.success && Array.isArray(data.products)) {
+        let deletedIds: string[] = [];
+        try { deletedIds = JSON.parse(localStorage.getItem('deleted_product_ids') || '[]'); } catch (e) {}
+        onRefresh(data.products.filter((p: Product) => !deletedIds.includes(p.id)));
       }
     } catch (err) {
       console.error('Failed to bulk delete products:', err);
