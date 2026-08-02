@@ -60,7 +60,11 @@ export default function App() {
   }, []);
 
   // Fetch Products
-  const fetchProducts = useCallback(async () => {
+  const fetchProducts = useCallback(async (instantProducts?: Product[]) => {
+    if (instantProducts && Array.isArray(instantProducts)) {
+      setProducts(instantProducts);
+      return;
+    }
     try {
       const res = await fetch('/api/products');
       const data = await res.json();

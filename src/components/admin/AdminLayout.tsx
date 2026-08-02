@@ -17,7 +17,7 @@ interface AdminLayoutProps {
   products: Product[];
   orders: Order[];
   categories: any[];
-  onRefresh: () => void;
+  onRefresh: (updatedProducts?: Product[]) => void;
   onLogout: () => void;
   onExitToStore: () => void;
 }
@@ -141,8 +141,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             )}
             {activeTab === 'bulk' && (
               <BulkUploadModal 
-                onSuccess={() => {
-                  onRefresh();
+                onSuccess={(newProducts) => {
+                  onRefresh(newProducts);
                   setActiveTab('products');
                 }} 
               />

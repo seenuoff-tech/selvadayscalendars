@@ -7,7 +7,7 @@ import { parseExcelOrCsvFile, downloadSampleExcelTemplate } from '../../lib/exce
 import { BulkUploadRow } from '../../types';
 
 interface BulkUploadModalProps {
-  onSuccess: () => void;
+  onSuccess: (newProducts?: any[]) => void;
 }
 
 export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ onSuccess }) => {
@@ -130,7 +130,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ onSuccess }) =
         setParsedRows([]);
         setFileName('');
         setSelectedImages([]);
-        onSuccess();
+        onSuccess(data.products);
       } else {
         setErrorMessage(data.message || 'Failed to import products.');
       }
