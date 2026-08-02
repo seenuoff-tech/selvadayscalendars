@@ -220,7 +220,10 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
   // Delete product
   const handleDeleteProduct = async (id: string) => {
     try {
-      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      let res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        res = await fetch(`/api/products/delete/${id}`, { method: 'POST' });
+      }
       const data = await res.json();
       if (data.success) {
         setDeletingProductId(null);
@@ -234,14 +237,23 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
   // Bulk Delete
   const handleBulkDelete = async () => {
     if (selectedProductIds.length === 0) return;
-    if (!window.confirm(`Are you sure you want to delete ${selectedProductIds.length} products?`)) return;
 
     try {
-      const res = await fetch('/api/products/bulk', {
+      let res = await fetch('/api/products/bulk', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: selectedProductIds })
       });
+      
+      // Fallback to POST if DELETE returns non-ok (e.g. proxy issues)
+      if (!res.ok) {
+        res = await fetch('/api/products/bulk-delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: selectedProductIds })
+        });
+      }
+
       const data = await res.json();
       if (data.success) {
         setSelectedProductIds([]);

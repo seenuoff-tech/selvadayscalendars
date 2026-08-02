@@ -161,6 +161,20 @@ app.delete("/api/products/bulk", (req, res) => {
   res.json({ success: true, message: `Successfully deleted ${initCount - memoryProducts.length} products`, products: memoryProducts });
 });
 
+// POST bulk delete products (for platforms/proxies that struggle with DELETE body)
+app.post("/api/products/bulk-delete", (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ success: false, message: "No product IDs provided" });
+  }
+
+  const initCount = memoryProducts.length;
+  memoryProducts = memoryProducts.filter(p => !ids.includes(p.id));
+  memoryProducts = resequence(memoryProducts);
+
+  res.json({ success: true, message: `Successfully deleted ${initCount - memoryProducts.length} products`, products: memoryProducts });
+});
+
 // POST toggle enable/disable product
 app.post("/api/products/toggle/:id", (req, res) => {
   const { id } = req.params;
@@ -186,6 +200,14 @@ app.put("/api/products/:id", (req, res) => {
 
 // DELETE single product
 app.delete("/api/products/:id", (req, res) => {
+  const { id } = req.params;
+  memoryProducts = memoryProducts.filter(p => p.id !== id);
+  memoryProducts = resequence(memoryProducts);
+  res.json({ success: true, message: "Product deleted successfully", products: memoryProducts });
+});
+
+// POST single delete product fallback
+app.post("/api/products/delete/:id", (req, res) => {
   const { id } = req.params;
   memoryProducts = memoryProducts.filter(p => p.id !== id);
   memoryProducts = resequence(memoryProducts);

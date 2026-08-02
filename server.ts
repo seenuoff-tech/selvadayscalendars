@@ -304,25 +304,43 @@ app.post("/api/products/toggle/:id", (req, res) => {
 });
 
 // DELETE bulk products
-app.delete("/api/products/bulk", (req, res) => {
-  const db = initDB();
+app.delete("/api/products/bulk", async (req, res) => {
   const { ids } = req.body;
-
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ success: false, message: "No product IDs provided" });
   }
 
-  const initialCount = db.products.length;
-  db.products = db.products.filter(p => !ids.includes(p.id));
-
-  if (db.products.length === initialCount) {
-    return res.status(404).json({ success: false, message: "Products not found" });
-  }
-
+  const db = initDB();
+  const initCount = db.products.length;
+  db.products = db.products.filter((p) => !ids.includes(p.id));
   db.products = resequenceProducts(db.products);
   writeDB(db);
 
-  res.json({ success: true, message: `Successfully deleted ${initialCount - db.products.length} products`, products: db.products });
+  res.json({
+    success: true,
+    message: `Successfully deleted ${initCount - db.products.length} products`,
+    products: db.products,
+  });
+});
+
+// POST bulk delete products fallback
+app.post("/api/products/bulk-delete", async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ success: false, message: "No product IDs provided" });
+  }
+
+  const db = initDB();
+  const initCount = db.products.length;
+  db.products = db.products.filter((p) => !ids.includes(p.id));
+  db.products = resequenceProducts(db.products);
+  writeDB(db);
+
+  res.json({
+    success: true,
+    message: `Successfully deleted ${initCount - db.products.length} products`,
+    products: db.products,
+  });
 });
 
 // DELETE product
