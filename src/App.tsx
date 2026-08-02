@@ -63,12 +63,26 @@ export default function App() {
   const fetchProducts = useCallback(async (instantProducts?: Product[]) => {
     if (instantProducts && Array.isArray(instantProducts)) {
       setProducts([...instantProducts]);
+      try {
+        localStorage.setItem('cached_portal_products', JSON.stringify(instantProducts));
+      } catch (e) {}
       return;
     }
     try {
       const res = await fetch('/api/products');
       const data = await res.json();
       if (data.success && Array.isArray(data.products)) {
+        // If we have cached products, merge/respect user modifications
+        const cachedStr = localStorage.getItem('cached_portal_products');
+        if (cachedStr) {
+          try {
+            const cached: Product[] = JSON.parse(cachedStr);
+            if (Array.isArray(cached) && cached.length < data.products.length) {
+              setProducts(cached);
+              return;
+            }
+          } catch (e) {}
+        }
         setProducts(data.products);
       }
     } catch (err) {
