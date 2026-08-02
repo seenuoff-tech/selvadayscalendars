@@ -114,7 +114,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ onSuccess }) =
         })
       );
 
-      const res = await fetch('/api/products/bulk', {
+      let res = await fetch('/api/products/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -122,6 +122,17 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ onSuccess }) =
           replaceExisting,
         }),
       });
+
+      if (!res.ok) {
+        res = await fetch('/api/products/bulk-upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            products: updatedRows,
+            replaceExisting,
+          }),
+        });
+      }
 
       const data = await res.json();
 
