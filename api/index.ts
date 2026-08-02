@@ -124,16 +124,21 @@ app.get("/api/products", async (_req, res) => {
   if (pool) {
     try {
       const [rows]: any = await pool.query("SELECT * FROM products ORDER BY sortOrder ASC, sno ASC");
-      if (rows && Array.isArray(rows) && rows.length > 0) {
-        const formatted = rows.map((r: any, idx: number) => ({
-          ...r,
-          sno: idx + 1,
-          sortOrder: idx + 1,
-          enabled: Boolean(r.enabled),
-          price: Number(r.price) || 0
-        }));
-        memoryProducts = formatted;
-        return res.json({ success: true, products: formatted });
+      if (rows && Array.isArray(rows)) {
+        if (rows.length > 0) {
+          const formatted = rows.map((r: any, idx: number) => ({
+            ...r,
+            sno: idx + 1,
+            sortOrder: idx + 1,
+            enabled: Boolean(r.enabled),
+            price: Number(r.price) || 0
+          }));
+          memoryProducts = formatted;
+          return res.json({ success: true, products: formatted });
+        } else {
+          memoryProducts = [];
+          return res.json({ success: true, products: [] });
+        }
       }
     } catch (err) {
       console.error("TiDB error:", err);
