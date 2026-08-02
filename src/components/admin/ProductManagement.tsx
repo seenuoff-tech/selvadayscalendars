@@ -220,13 +220,16 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
   // Delete product
   const handleDeleteProduct = async (id: string) => {
     try {
+      const remainingProducts = products.filter(p => p.id !== id);
+      setDeletingProductId(null);
+      onRefresh(remainingProducts);
+
       let res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
       if (!res.ok) {
         res = await fetch(`/api/products/delete/${id}`, { method: 'POST' });
       }
       const data = await res.json();
-      if (data.success) {
-        setDeletingProductId(null);
+      if (data.success && data.products) {
         onRefresh(data.products);
       }
     } catch (err) {
