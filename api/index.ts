@@ -376,6 +376,17 @@ app.delete("/api/products/:id", async (req, res) => {
   if (pool) {
     try {
       await pool.query("DELETE FROM products WHERE id = ?", [id]);
+      const [rows]: any = await pool.query("SELECT * FROM products ORDER BY sortOrder ASC, sno ASC");
+      if (rows && Array.isArray(rows)) {
+        const formatted = rows.map((r: any, idx: number) => ({
+          ...r,
+          sno: idx + 1,
+          sortOrder: idx + 1,
+          enabled: Boolean(r.enabled),
+          price: Number(r.price) || 0
+        }));
+        return res.json({ success: true, message: "Product deleted successfully", products: formatted });
+      }
     } catch (err) {
       console.error("TiDB delete error:", err);
     }
@@ -394,6 +405,17 @@ app.post("/api/products/delete/:id", async (req, res) => {
   if (pool) {
     try {
       await pool.query("DELETE FROM products WHERE id = ?", [id]);
+      const [rows]: any = await pool.query("SELECT * FROM products ORDER BY sortOrder ASC, sno ASC");
+      if (rows && Array.isArray(rows)) {
+        const formatted = rows.map((r: any, idx: number) => ({
+          ...r,
+          sno: idx + 1,
+          sortOrder: idx + 1,
+          enabled: Boolean(r.enabled),
+          price: Number(r.price) || 0
+        }));
+        return res.json({ success: true, message: "Product deleted successfully", products: formatted });
+      }
     } catch (err) {
       console.error("TiDB delete error:", err);
     }
