@@ -239,8 +239,8 @@ export default function App() {
         products={products}
         orders={orders}
         categories={categories}
-        onRefresh={() => {
-          fetchProducts();
+        onRefresh={(updatedProducts) => {
+          fetchProducts(updatedProducts);
           fetchOrders();
           fetchCategories();
         }}
