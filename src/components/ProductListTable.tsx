@@ -24,10 +24,7 @@ export const ProductListTable: React.FC<ProductListTableProps> = ({
     setFailedImages((prev) => ({ ...prev, [id]: true }));
   };
 
-  // Calculate missing images list (either image error, empty URL, or fallback placeholder)
-  const missingImageProducts = activeProducts.filter(
-    (p) => failedImages[p.id] || !p.imageUrl || p.imageUrl.includes('unsplash')
-  );
+  const activeProducts = products.filter((p) => p.enabled);
 
   if (activeProducts.length === 0) {
     return (
@@ -44,43 +41,8 @@ export const ProductListTable: React.FC<ProductListTableProps> = ({
   }
 
   return (
-    <div id="product-list-wrapper" className="space-y-4 my-4">
-      
-      {/* Green missing image notification box */}
-      {missingImageProducts.length > 0 && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 sm:p-5 text-emerald-900 shadow-sm transition-all animate-in fade-in">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-            <div className="space-y-1.5 w-full">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-emerald-900">
-                  Image Audit Notification ({missingImageProducts.length} Product{missingImageProducts.length > 1 ? 's' : ''} Missing Custom Image)
-                </h4>
-                <span className="text-xs font-bold bg-emerald-200/80 text-emerald-800 px-2.5 py-0.5 rounded-full">
-                  Bulk Upload Status
-                </span>
-              </div>
-              <p className="text-xs text-emerald-700 leading-relaxed">
-                The following products were bulk uploaded without an image file or have a broken image path. Please upload valid image files in Admin Media Management:
-              </p>
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {missingImageProducts.map((p) => (
-                  <span
-                    key={p.id}
-                    className="inline-flex items-center gap-1 bg-white text-emerald-800 border border-emerald-300 text-xs px-2.5 py-1 rounded-lg font-medium shadow-2xs"
-                  >
-                    <span className="font-bold text-emerald-900">#{p.sno}</span> {p.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main products table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        {/* Table header info bar */}
+    <div id="product-list-wrapper" className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden my-4">
+      {/* Table header info bar */}
       <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-200/80 flex items-center justify-between text-xs text-slate-600 font-medium">
         <span>Showing {activeProducts.length} Product{activeProducts.length !== 1 ? 's' : ''}</span>
         <span className="text-slate-500 hidden sm:inline">Enter quantities or use + / - buttons to build order</span>
@@ -239,7 +201,6 @@ export const ProductListTable: React.FC<ProductListTableProps> = ({
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 };

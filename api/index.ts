@@ -175,6 +175,37 @@ app.post("/api/products/bulk-delete", (req, res) => {
   res.json({ success: true, message: `Successfully deleted ${initCount - memoryProducts.length} products`, products: memoryProducts });
 });
 
+// POST rearrange products
+app.post("/api/products/rearrange", (req, res) => {
+  const { productIds } = req.body;
+  if (!Array.isArray(productIds)) {
+    return res.status(400).json({ success: false, message: "productIds array is required" });
+  }
+
+  const map = new Map(memoryProducts.map(p => [p.id, p]));
+  const rearranged: Product[] = [];
+
+  productIds.forEach((id, idx) => {
+    const prod = map.get(id);
+    if (prod) {
+      prod.sortOrder = idx + 1;
+      prod.sno = idx + 1;
+      rearranged.push(prod);
+      map.delete(id);
+    }
+  });
+
+  map.forEach(prod => {
+    const nextSort = rearranged.length + 1;
+    prod.sortOrder = nextSort;
+    prod.sno = nextSort;
+    rearranged.push(prod);
+  });
+
+  memoryProducts = rearranged;
+  res.json({ success: true, products: memoryProducts });
+});
+
 // POST toggle enable/disable product
 app.post("/api/products/toggle/:id", (req, res) => {
   const { id } = req.params;

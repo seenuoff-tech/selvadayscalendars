@@ -387,11 +387,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                         <img
                           src={product.imageUrl}
                           alt={product.name}
-                          onError={(e) => {
-                            // Replace broken image path with a clean missing image placeholder
-                            (e.target as HTMLImageElement).onerror = null;
-                            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=100&q=80";
-                          }}
                           className="w-14 h-14 object-contain rounded-xl border border-slate-200 mx-auto bg-slate-50 shadow-2xs"
                         />
                       </td>
@@ -401,15 +396,10 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                         <div className="font-bold text-slate-900 text-sm leading-snug">
                           {product.name}
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center gap-2 mt-0.5">
                           {product.category && (
                             <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">
                               {product.category}
-                            </span>
-                          )}
-                          {(!product.imageUrl || product.imageUrl.includes('unsplash') || product.imageUrl === '/media/image122.jpeg' || product.imageUrl === '/media/image123.jpeg' || product.imageUrl === '/media/image124.jpeg') && (
-                            <span className="text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              ⚠️ Image Not Uploaded
                             </span>
                           )}
                         </div>
