@@ -340,34 +340,9 @@
   ],
   "categories": [
     {
-      "id": "cat-1",
-      "name": "Desk Calendar",
+      "id": "cat-1785676457423",
+      "name": "Desk calendar",
       "sortOrder": 1
-    },
-    {
-      "id": "cat-2",
-      "name": "Wall Calendar",
-      "sortOrder": 2
-    },
-    {
-      "id": "cat-3",
-      "name": "Pocket Calendar",
-      "sortOrder": 3
-    },
-    {
-      "id": "cat-4",
-      "name": "Premium Calendar",
-      "sortOrder": 4
-    },
-    {
-      "id": "cat-5",
-      "name": "Office Calendar",
-      "sortOrder": 5
-    },
-    {
-      "id": "cat-6",
-      "name": "Magnetic Calendar",
-      "sortOrder": 6
     }
   ],
   "settings": {
