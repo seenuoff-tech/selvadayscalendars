@@ -69,14 +69,7 @@ export default function App() {
       const res = await fetch('/api/products');
       const data = await res.json();
       if (data.success && Array.isArray(data.products)) {
-        // Filter out deleted product IDs stored in client localStorage
-        let deletedIds: string[] = [];
-        try {
-          deletedIds = JSON.parse(localStorage.getItem('deleted_product_ids') || '[]');
-        } catch (e) {}
-
-        const filtered = data.products.filter((p: Product) => !deletedIds.includes(p.id));
-        setProducts(filtered);
+        setProducts(data.products);
       }
     } catch (err) {
       console.error('Error fetching products:', err);
