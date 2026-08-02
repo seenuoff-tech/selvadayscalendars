@@ -9,7 +9,7 @@ import { Product, Category } from '../../types';
 interface ProductManagementProps {
   products: Product[];
   categories: Category[];
-  onRefresh: () => void;
+  onRefresh: (updatedProducts?: Product[]) => void;
 }
 
 export const ProductManagement: React.FC<ProductManagementProps> = ({
@@ -227,7 +227,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
       const data = await res.json();
       if (data.success) {
         setDeletingProductId(null);
-        onRefresh();
+        onRefresh(data.products);
       }
     } catch (err) {
       console.error('Failed to delete product:', err);
@@ -257,7 +257,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
       const data = await res.json();
       if (data.success) {
         setSelectedProductIds([]);
-        onRefresh();
+        onRefresh(data.products);
       }
     } catch (err) {
       console.error('Failed to bulk delete products:', err);
