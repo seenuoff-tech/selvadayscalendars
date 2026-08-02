@@ -220,6 +220,55 @@ app.put("/api/products/:id", async (req, res) => {
   }
 });
 
+// POST bulk upload products (Excel Import)
+app.post("/api/products/bulk", async (req, res) => {
+  const { products, replaceExisting } = req.body;
+
+  if (!Array.isArray(products) || products.length === 0) {
+    return res.status(400).json({ success: false, message: "No products provided" });
+  }
+
+  const startSno = replaceExisting ? 0 : memoryProducts.length;
+  const newProds: Product[] = products.map((p, idx) => ({
+    id: `prod-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
+    sno: startSno + idx + 1,
+    sortOrder: startSno + idx + 1,
+    name: p.productName || p.name || `Calendar Product ${idx + 1}`,
+    price: p.price ? Number(p.price) : 0,
+    imageUrl: p.imageUrl || "/media/image101.jpeg",
+    enabled: p.enabled !== undefined ? (String(p.enabled).toLowerCase() !== "false" && String(p.enabled).toLowerCase() !== "disabled" && Boolean(p.enabled)) : true,
+    description: p.description || "",
+    category: p.category || "Calendar",
+    createdAt: new Date().toISOString()
+  }));
+
+  if (replaceExisting) {
+    memoryProducts = newProds;
+  } else {
+    memoryProducts = [...memoryProducts, ...newProds];
+  }
+
+  memoryProducts = resequence(memoryProducts);
+
+  if (pool) {
+    try {
+      if (replaceExisting) {
+        await pool.query("TRUNCATE TABLE products");
+      }
+      for (const p of newProds) {
+        await pool.query(
+          "INSERT INTO products (id, sno, sortOrder, name, price, imageUrl, enabled, description, category, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [p.id, p.sno, p.sortOrder, p.name, p.price, p.imageUrl, p.enabled, p.description, p.category, p.createdAt]
+        );
+      }
+    } catch (err) {
+      console.error("TiDB bulk insert error:", err);
+    }
+  }
+
+  res.json({ success: true, message: `Successfully imported ${newProds.length} products!`, products: memoryProducts });
+});
+
 // DELETE bulk products
 app.delete("/api/products/bulk", async (req, res) => {
   const { ids } = req.body;
