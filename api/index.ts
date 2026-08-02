@@ -85,6 +85,7 @@ app.post("/api/settings", (req, res) => {
 
 // GET products
 app.get("/api/products", (_req, res) => {
+  memoryProducts = memoryProducts.filter(p => !globalDeletedIds.has(p.id));
   memoryProducts = resequence(memoryProducts);
   res.json({ success: true, products: memoryProducts });
 });
@@ -229,10 +230,14 @@ app.put("/api/products/:id", (req, res) => {
   }
 });
 
+// Track deleted IDs across serverless invocations within container lifespan
+let globalDeletedIds = new Set<string>();
+
 // DELETE single product
 app.delete("/api/products/:id", (req, res) => {
   const { id } = req.params;
-  memoryProducts = memoryProducts.filter(p => p.id !== id);
+  globalDeletedIds.add(id);
+  memoryProducts = memoryProducts.filter(p => !globalDeletedIds.has(p.id));
   memoryProducts = resequence(memoryProducts);
   res.json({ success: true, message: "Product deleted successfully", products: memoryProducts });
 });
@@ -240,7 +245,8 @@ app.delete("/api/products/:id", (req, res) => {
 // POST single delete product fallback
 app.post("/api/products/delete/:id", (req, res) => {
   const { id } = req.params;
-  memoryProducts = memoryProducts.filter(p => p.id !== id);
+  globalDeletedIds.add(id);
+  memoryProducts = memoryProducts.filter(p => !globalDeletedIds.has(p.id));
   memoryProducts = resequence(memoryProducts);
   res.json({ success: true, message: "Product deleted successfully", products: memoryProducts });
 });
