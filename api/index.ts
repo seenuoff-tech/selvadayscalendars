@@ -521,13 +521,68 @@ const handleDeleteCategoryApi = async (req: express.Request, res: express.Respon
 app.delete("/api/categories/:id", handleDeleteCategoryApi);
 app.post("/api/categories/delete/:id", handleDeleteCategoryApi);
 
+// Helper to ensure orders table exists in TiDB database
+let isOrderTableInitialized = false;
+
+async function ensureOrderTable() {
+  if (!pool || isOrderTableInitialized) return;
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS orders (
+        id VARCHAR(255) PRIMARY KEY,
+        orderNumber VARCHAR(255) NOT NULL,
+        customerName VARCHAR(255) NOT NULL,
+        mobileNumber VARCHAR(255) NOT NULL,
+        city VARCHAR(255),
+        items LONGTEXT,
+        totalQty INT,
+        totalPrice DECIMAL(10, 2),
+        status VARCHAR(50),
+        createdAt DATETIME,
+        notes TEXT
+      )
+    `);
+    isOrderTableInitialized = true;
+  } catch (err) {
+    console.error("Failed to create orders table in TiDB:", err);
+  }
+}
+
+async function getOrdersList(): Promise<Order[]> {
+  if (pool) {
+    try {
+      await ensureOrderTable();
+      const [rows]: any = await pool.query("SELECT * FROM orders ORDER BY createdAt DESC");
+      if (rows && Array.isArray(rows)) {
+        return rows.map((r: any) => ({
+          id: String(r.id),
+          orderNumber: String(r.orderNumber),
+          customerName: String(r.customerName),
+          mobileNumber: String(r.mobileNumber),
+          city: String(r.city || ""),
+          items: typeof r.items === "string" ? JSON.parse(r.items) : (r.items || []),
+          totalQty: Number(r.totalQty) || 0,
+          totalPrice: Number(r.totalPrice) || 0,
+          status: r.status || "Pending",
+          createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString(),
+          notes: String(r.notes || "")
+        }));
+      }
+    } catch (err) {
+      console.error("TiDB fetch orders error:", err);
+    }
+  }
+  return memoryOrders;
+}
+
 // GET orders
-app.get("/api/orders", (_req, res) => {
-  res.json({ success: true, orders: memoryOrders });
+app.get("/api/orders", async (_req, res) => {
+  const orders = await getOrdersList();
+  res.json({ success: true, orders });
 });
 
 // POST create order
-app.post("/api/orders", (req, res) => {
+app.post("/api/orders", async (req, res) => {
   const { customerName, mobileNumber, city, items, notes } = req.body;
 
   if (!customerName || !mobileNumber) {
@@ -553,26 +608,77 @@ app.post("/api/orders", (req, res) => {
   };
 
   memoryOrders.unshift(newOrder);
+
+  if (pool) {
+    try {
+      await ensureOrderTable();
+      await pool.query(
+        "INSERT INTO orders (id, orderNumber, customerName, mobileNumber, city, items, totalQty, totalPrice, status, createdAt, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          newOrder.id,
+          newOrder.orderNumber,
+          newOrder.customerName,
+          newOrder.mobileNumber,
+          newOrder.city,
+          JSON.stringify(newOrder.items),
+          newOrder.totalQty,
+          newOrder.totalPrice,
+          newOrder.status,
+          new Date(newOrder.createdAt),
+          newOrder.notes
+        ]
+      );
+    } catch (err) {
+      console.error("TiDB create order error:", err);
+    }
+  }
+
   res.json({ success: true, order: newOrder });
 });
 
 // PUT update order status
-app.put("/api/orders/:id/status", (req, res) => {
+app.put("/api/orders/:id/status", async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
+  
   const idx = memoryOrders.findIndex(o => o.id === id);
   if (idx !== -1) {
     memoryOrders[idx].status = status;
-    res.json({ success: true, order: memoryOrders[idx] });
+  }
+
+  if (pool) {
+    try {
+      await ensureOrderTable();
+      await pool.query("UPDATE orders SET status = ? WHERE id = ?", [status, id]);
+    } catch (err) {
+      console.error("TiDB update order status error:", err);
+    }
+  }
+
+  const allOrders = await getOrdersList();
+  const updatedOrder = allOrders.find(o => o.id === id) || (idx !== -1 ? memoryOrders[idx] : null);
+  
+  if (updatedOrder) {
+    res.json({ success: true, order: updatedOrder });
   } else {
     res.status(404).json({ success: false, message: "Order not found" });
   }
 });
 
 // DELETE order
-app.delete("/api/orders/:id", (req, res) => {
+app.delete("/api/orders/:id", async (req, res) => {
   const { id } = req.params;
   memoryOrders = memoryOrders.filter(o => o.id !== id);
+
+  if (pool) {
+    try {
+      await ensureOrderTable();
+      await pool.query("DELETE FROM orders WHERE id = ?", [id]);
+    } catch (err) {
+      console.error("TiDB delete order error:", err);
+    }
+  }
+
   res.json({ success: true, message: "Order deleted successfully" });
 });
 
