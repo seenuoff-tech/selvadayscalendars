@@ -16,12 +16,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   orders,
   onNavigateTab,
 }) => {
-  const totalOrders = orders.length;
-  const totalItemsOrdered = orders.reduce((acc, o) => acc + o.totalQty, 0);
-  const activeProducts = products.filter((p) => p.enabled).length;
-  const disabledProducts = products.length - activeProducts;
+  const safeOrders = Array.isArray(orders) ? orders : [];
+  const safeProducts = Array.isArray(products) ? products : [];
 
-  const recentOrders = orders.slice(0, 5);
+  const totalOrders = safeOrders.length;
+  const totalItemsOrdered = safeOrders.reduce((acc, o) => acc + (o?.totalQty || 0), 0);
+  const activeProducts = safeProducts.filter((p) => p && p.enabled).length;
+  const disabledProducts = safeProducts.length - activeProducts;
+
+  const recentOrders = safeOrders.slice(0, 5);
 
   return (
     <div id="admin-dashboard-module" className="space-y-6">

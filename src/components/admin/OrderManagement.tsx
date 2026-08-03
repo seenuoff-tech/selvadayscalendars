@@ -19,13 +19,23 @@ export const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onRefr
   const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
 
-  // Filter orders
-  const filteredOrders = orders.filter((order) => {
+  // Safe orders array check
+  const safeOrders = Array.isArray(orders) ? orders : [];
+
+  // Filter orders safely
+  const filteredOrders = safeOrders.filter((order) => {
+    if (!order) return false;
+    const q = (searchQuery || '').toLowerCase();
+    const orderNum = (order.orderNumber || '').toLowerCase();
+    const custName = (order.customerName || '').toLowerCase();
+    const mobile = String(order.mobileNumber || '');
+    const city = (order.city || '').toLowerCase();
+
     const matchesSearch =
-      order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.mobileNumber.includes(searchQuery) ||
-      order.city.toLowerCase().includes(searchQuery.toLowerCase());
+      orderNum.includes(q) ||
+      custName.includes(q) ||
+      mobile.includes(q) ||
+      city.includes(q);
 
     const matchesStatus = selectedStatusFilter === 'ALL' || order.status === selectedStatusFilter;
 
@@ -122,7 +132,7 @@ export const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onRefr
             onChange={(e) => setSelectedStatusFilter(e.target.value)}
             className="bg-slate-50 border border-slate-300 text-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-            <option value="ALL">All Statuses ({orders.length})</option>
+            <option value="ALL">All Statuses ({safeOrders.length})</option>
             <option value="Pending">Pending</option>
             <option value="Confirmed">Confirmed</option>
             <option value="Processing">Processing</option>
