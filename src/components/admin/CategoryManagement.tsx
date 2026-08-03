@@ -36,7 +36,9 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
     setEditingCategory(null);
   };
 
-  const handleSaveCategory = async () => {
+  const handleSaveCategory = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
     if (!formData.name.trim()) {
       setFormError('Category name is required.');
       return;
@@ -50,11 +52,19 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
       const url = isEdit ? `/api/categories/${editingCategory.id}` : '/api/categories';
       const method = isEdit ? 'PUT' : 'POST';
 
-      const res = await fetch(url, {
+      let res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
+
+      if (!res.ok && isEdit) {
+        res = await fetch(`/api/categories/update/${editingCategory.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
+      }
 
       const data = await res.json();
       if (data.success) {
@@ -73,11 +83,16 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
   const handleDeleteCategory = async (id: string) => {
     try {
-      const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+      let res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        res = await fetch(`/api/categories/delete/${id}`, { method: 'POST' });
+      }
       const data = await res.json();
       if (data.success) {
         setDeletingCategoryId(null);
         onRefresh();
+      } else {
+        setFormError(data.message || 'Failed to delete category');
       }
     } catch (err) {
       console.error('Failed to delete category:', err);
@@ -160,12 +175,12 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
       {(isAddModalOpen || editingCategory) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={closeModals}></div>
-          <div className="relative bg-white w-full max-w-md rounded-2xl shadow-xl flex flex-col">
+          <form onSubmit={handleSaveCategory} className="relative bg-white w-full max-w-md rounded-2xl shadow-xl flex flex-col z-10">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">
                 {editingCategory ? 'Edit Category' : 'Add New Category'}
               </h2>
-              <button onClick={closeModals} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+              <button type="button" onClick={closeModals} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -185,6 +200,7 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   </label>
                   <input
                     type="text"
+                    required
                     value={formData.name}
                     onChange={(e) => setFormData({ name: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
@@ -196,20 +212,21 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
             <div className="p-5 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl flex justify-end gap-3">
               <button
+                type="button"
                 onClick={closeModals}
                 className="px-5 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={handleSaveCategory}
+                type="submit"
                 disabled={isSubmitting}
                 className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-2"
               >
                 {isSubmitting ? 'Saving...' : 'Save Category'}
               </button>
             </div>
-          </div>
+          </form>
         </div>
       )}
 

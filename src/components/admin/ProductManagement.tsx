@@ -193,6 +193,13 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+        if (!res.ok) {
+          res = await fetch(`/api/products/update/${editingProduct.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+        }
       } else {
         res = await fetch('/api/products', {
           method: 'POST',
@@ -206,7 +213,11 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
         setIsAddModalOpen(false);
         setEditingProduct(null);
         resetForm();
-        onRefresh();
+        if (Array.isArray(data.products)) {
+          onRefresh(data.products);
+        } else {
+          onRefresh();
+        }
       } else {
         setFormError(data.message || 'Operation failed.');
       }
@@ -567,6 +578,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                         {cat.name}
                       </option>
                     ))}
+                    {formData.category && !categories.some(c => c.name === formData.category) && (
+                      <option value={formData.category}>{formData.category}</option>
+                    )}
                   </select>
                 </div>
 

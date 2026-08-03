@@ -263,8 +263,8 @@ app.post("/api/products", (req, res) => {
   res.json({ success: true, product: newProduct, products: db.products });
 });
 
-// PUT edit product
-app.put("/api/products/:id", (req, res) => {
+// PUT / POST edit product
+const handleUpdateProduct = (req: express.Request, res: express.Response) => {
   const db = initDB();
   const { id } = req.params;
   const { name, price, imageUrl, enabled, description, category } = req.body;
@@ -285,7 +285,10 @@ app.put("/api/products/:id", (req, res) => {
   writeDB(db);
 
   res.json({ success: true, product: db.products[index], products: db.products });
-});
+};
+
+app.put("/api/products/:id", handleUpdateProduct);
+app.post("/api/products/update/:id", handleUpdateProduct);
 
 // POST toggle enable/disable product
 app.post("/api/products/toggle/:id", (req, res) => {
@@ -458,8 +461,8 @@ app.post("/api/categories", (req, res) => {
   res.json({ success: true, category: newCat, categories: db.categories });
 });
 
-// PUT update category
-app.put("/api/categories/:id", (req, res) => {
+// PUT / POST update category
+const handleUpdateCategory = (req: express.Request, res: express.Response) => {
   const db = initDB();
   const { id } = req.params;
   const { name } = req.body;
@@ -469,17 +472,29 @@ app.put("/api/categories/:id", (req, res) => {
 
   if (idx !== -1) {
     if (name && name.trim()) {
-      db.categories[idx].name = name.trim();
+      const oldName = db.categories[idx].name;
+      const newName = name.trim();
+      db.categories[idx].name = newName;
+      if (db.products && Array.isArray(db.products)) {
+        db.products.forEach(p => {
+          if (p.category === oldName) {
+            p.category = newName;
+          }
+        });
+      }
     }
     writeDB(db);
     res.json({ success: true, category: db.categories[idx], categories: db.categories });
   } else {
     res.status(404).json({ success: false, message: "Category not found" });
   }
-});
+};
 
-// DELETE category
-app.delete("/api/categories/:id", (req, res) => {
+app.put("/api/categories/:id", handleUpdateCategory);
+app.post("/api/categories/update/:id", handleUpdateCategory);
+
+// DELETE / POST delete category
+const handleDeleteCategory = (req: express.Request, res: express.Response) => {
   const db = initDB();
   const { id } = req.params;
 
@@ -488,7 +503,10 @@ app.delete("/api/categories/:id", (req, res) => {
   writeDB(db);
 
   res.json({ success: true, categories: db.categories });
-});
+};
+
+app.delete("/api/categories/:id", handleDeleteCategory);
+app.post("/api/categories/delete/:id", handleDeleteCategory);
 
 // GET orders
 app.get("/api/orders", (req, res) => {

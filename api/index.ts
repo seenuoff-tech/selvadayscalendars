@@ -194,21 +194,24 @@ app.post("/api/products", async (req, res) => {
   res.json({ success: true, product: newProduct, products: memoryProducts });
 });
 
-// PUT update product
-app.put("/api/products/:id", async (req, res) => {
+// PUT / POST update product
+const handleUpdateProductApi = async (req: express.Request, res: express.Response) => {
   const { id } = req.params;
   const { name, price, imageUrl, enabled, description, category } = req.body;
 
   const idx = memoryProducts.findIndex(p => p.id === id);
   if (idx !== -1) {
     memoryProducts[idx] = { ...memoryProducts[idx], ...req.body };
+    if (name !== undefined) memoryProducts[idx].name = name.trim();
+    if (price !== undefined) memoryProducts[idx].price = Number(price);
+
     memoryProducts = resequence(memoryProducts);
 
     if (pool) {
       try {
         await pool.query(
           "UPDATE products SET name = ?, price = ?, imageUrl = ?, enabled = ?, description = ?, category = ? WHERE id = ?",
-          [memoryProducts[idx].name, memoryProducts[idx].price, memoryProducts[idx].imageUrl, memoryProducts[idx].enabled, memoryProducts[idx].description, memoryProducts[idx].category, id]
+          [memoryProducts[idx].name, memoryProducts[idx].price, memoryProducts[idx].imageUrl, memoryProducts[idx].enabled ? 1 : 0, memoryProducts[idx].description, memoryProducts[idx].category, id]
         );
       } catch (err) {
         console.error("TiDB update error:", err);
@@ -218,7 +221,10 @@ app.put("/api/products/:id", async (req, res) => {
   } else {
     res.status(404).json({ success: false, message: "Product not found" });
   }
-});
+};
+
+app.put("/api/products/:id", handleUpdateProductApi);
+app.post("/api/products/update/:id", handleUpdateProductApi);
 
 // POST bulk upload products (Excel Import)
 app.post("/api/products/bulk", async (req, res) => {
@@ -444,27 +450,56 @@ app.post("/api/categories", (req, res) => {
   res.json({ success: true, category: newCat, categories: memoryCategories });
 });
 
-// PUT update category
-app.put("/api/categories/:id", (req, res) => {
+// PUT / POST update category
+const handleUpdateCategoryApi = async (req: express.Request, res: express.Response) => {
   const { id } = req.params;
   const { name } = req.body;
   const idx = memoryCategories.findIndex(c => c.id === id);
   if (idx !== -1) {
     if (name && name.trim()) {
-      memoryCategories[idx].name = name.trim();
+      const oldName = memoryCategories[idx].name;
+      const newName = name.trim();
+      memoryCategories[idx].name = newName;
+      memoryProducts.forEach(p => {
+        if (p.category === oldName) p.category = newName;
+      });
+
+      if (pool) {
+        try {
+          await pool.query("UPDATE categories SET name = ? WHERE id = ?", [newName, id]);
+          await pool.query("UPDATE products SET category = ? WHERE category = ?", [newName, oldName]);
+        } catch (err) {
+          console.error("TiDB category update error:", err);
+        }
+      }
     }
     res.json({ success: true, category: memoryCategories[idx], categories: memoryCategories });
   } else {
     res.status(404).json({ success: false, message: "Category not found" });
   }
-});
+};
 
-// DELETE category
-app.delete("/api/categories/:id", (req, res) => {
+app.put("/api/categories/:id", handleUpdateCategoryApi);
+app.post("/api/categories/update/:id", handleUpdateCategoryApi);
+
+// DELETE / POST delete category
+const handleDeleteCategoryApi = async (req: express.Request, res: express.Response) => {
   const { id } = req.params;
   memoryCategories = memoryCategories.filter(c => c.id !== id);
+
+  if (pool) {
+    try {
+      await pool.query("DELETE FROM categories WHERE id = ?", [id]);
+    } catch (err) {
+      console.error("TiDB category delete error:", err);
+    }
+  }
+
   res.json({ success: true, categories: memoryCategories });
-});
+};
+
+app.delete("/api/categories/:id", handleDeleteCategoryApi);
+app.post("/api/categories/delete/:id", handleDeleteCategoryApi);
 
 // GET orders
 app.get("/api/orders", (_req, res) => {
