@@ -101,12 +101,21 @@ export const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onRefr
             placeholder="Search by customer name, mobile, city, or order #..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-[#0C8D99] outline-none"
           />
         </div>
 
-        {/* Status Filter & Export Button */}
+        {/* Status Filter, Refresh & Export Button */}
         <div className="flex items-center space-x-3 justify-between sm:justify-end">
+          
+          <button
+            onClick={onRefresh}
+            className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-colors border border-slate-200 shadow-xs"
+            title="Refresh Orders"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
           
           <select
             value={selectedStatusFilter}

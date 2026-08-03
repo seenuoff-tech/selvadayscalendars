@@ -102,7 +102,7 @@ export default function App() {
     }
   }, []);
 
-  // Initial Load
+  // Initial Load & Auto-polling for Orders
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
@@ -110,6 +110,13 @@ export default function App() {
       setIsLoading(false);
     }
     loadData();
+
+    // Auto-refresh orders every 10 seconds so Admin stays updated
+    const intervalId = setInterval(() => {
+      fetchOrders();
+    }, 10000);
+
+    return () => clearInterval(intervalId);
   }, [fetchProducts, fetchOrders, fetchCategories]);
 
   // Handle Qty Update from Customer Table
