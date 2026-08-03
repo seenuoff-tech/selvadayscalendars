@@ -240,11 +240,11 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
       if (data.success && Array.isArray(data.products)) {
         onRefresh(data.products);
       } else {
-        onRefresh(products.filter(p => p.id !== id));
+        onRefresh();
       }
     } catch (err) {
       console.error('Failed to delete product:', err);
-      onRefresh(products.filter(p => p.id !== id));
+      onRefresh();
     }
   };
 
@@ -253,7 +253,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     if (selectedProductIds.length === 0) return;
 
     try {
-      const remainingProducts = products.filter(p => !selectedProductIds.includes(p.id));
       setSelectedProductIds([]);
 
       let res = await fetch('/api/products/bulk', {
@@ -274,10 +273,11 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
       if (data.success && Array.isArray(data.products)) {
         onRefresh(data.products);
       } else {
-        onRefresh(remainingProducts);
+        onRefresh();
       }
     } catch (err) {
       console.error('Failed to bulk delete products:', err);
+      onRefresh();
     }
   };
 

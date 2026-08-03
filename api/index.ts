@@ -443,19 +443,18 @@ app.post("/api/products/bulk-upload", async (req, res) => {
 });
 
 // DELETE bulk products
-app.delete("/api/products/bulk", async (req, res) => {
+const handleBulkDeleteApi = async (req: express.Request, res: express.Response) => {
   const { ids } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ success: false, message: "No product IDs provided" });
   }
 
   ids.forEach((id: string) => globalDeletedIds.add(id));
-  const initCount = memoryProducts.length;
   memoryProducts = memoryProducts.filter(p => !ids.includes(p.id));
-  memoryProducts = resequence(memoryProducts);
 
   if (pool) {
     try {
+      await ensureDBSeeded();
       const placeholders = ids.map(() => "?").join(",");
       await pool.query(`DELETE FROM products WHERE id IN (${placeholders})`, ids);
     } catch (err) {
@@ -463,47 +462,36 @@ app.delete("/api/products/bulk", async (req, res) => {
     }
   }
 
-  res.json({ success: true, message: `Successfully deleted ${initCount - memoryProducts.length} products`, products: memoryProducts });
-});
+  const updatedProducts = await getProductsList();
+  res.json({
+    success: true,
+    message: `Successfully deleted products`,
+    products: updatedProducts,
+  });
+};
 
-// POST bulk delete products (for platforms/proxies that struggle with DELETE body)
-app.post("/api/products/bulk-delete", async (req, res) => {
-  const { ids } = req.body;
-  if (!Array.isArray(ids) || ids.length === 0) {
-    return res.status(400).json({ success: false, message: "No product IDs provided" });
-  }
-
-  ids.forEach((id: string) => globalDeletedIds.add(id));
-  const initCount = memoryProducts.length;
-  memoryProducts = memoryProducts.filter(p => !ids.includes(p.id));
-  memoryProducts = resequence(memoryProducts);
-
-  if (pool) {
-    try {
-      const placeholders = ids.map(() => "?").join(",");
-      await pool.query(`DELETE FROM products WHERE id IN (${placeholders})`, ids);
-    } catch (err) {
-      console.error("TiDB bulk delete error:", err);
-    }
-  }
-
-  res.json({ success: true, message: `Successfully deleted ${initCount - memoryProducts.length} products`, products: memoryProducts });
-});
+app.delete("/api/products/bulk", handleBulkDeleteApi);
+app.post("/api/products/bulk-delete", handleBulkDeleteApi);
 
 // DELETE single product
 const handleDeleteProductApi = async (req: express.Request, res: express.Response) => {
   const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ success: false, message: "Product ID is required" });
+  }
+
   globalDeletedIds.add(id);
-  memoryProducts = memoryProducts.filter(p => p.id !== id);
 
   if (pool) {
     try {
+      await ensureDBSeeded();
       await pool.query("DELETE FROM products WHERE id = ?", [id]);
     } catch (err) {
       console.error("TiDB delete error:", err);
     }
   }
 
+  memoryProducts = memoryProducts.filter(p => p.id !== id);
   const updatedProducts = await getProductsList();
   res.json({ success: true, message: "Product deleted successfully", products: updatedProducts });
 };

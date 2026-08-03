@@ -346,8 +346,8 @@ app.post("/api/products/bulk-delete", async (req, res) => {
   });
 });
 
-// DELETE product
-app.delete("/api/products/:id", (req, res) => {
+// DELETE / POST single product
+const handleDeleteSingleProduct = (req: express.Request, res: express.Response) => {
   const db = initDB();
   const { id } = req.params;
 
@@ -362,7 +362,10 @@ app.delete("/api/products/:id", (req, res) => {
   writeDB(db);
 
   res.json({ success: true, message: "Product deleted successfully", products: db.products });
-});
+};
+
+app.delete("/api/products/:id", handleDeleteSingleProduct);
+app.post("/api/products/delete/:id", handleDeleteSingleProduct);
 
 
 app.post("/api/products/rearrange", (req, res) => {
