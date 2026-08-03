@@ -38,7 +38,104 @@ const defaultCategories: Category[] = [
   { id: "cat-6", name: "Magnetic Calendar", sortOrder: 6 }
 ];
 
-const defaultProducts: Product[] = [];
+const defaultProducts: Product[] = [
+  {
+    id: "prod-1",
+    sno: 1,
+    sortOrder: 1,
+    name: "2026 Executive Desk Spiral Calendar",
+    price: 150,
+    imageUrl: "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=300&q=80",
+    enabled: true,
+    description: "High quality 12-month desk calendar with sturdy spiral binding and sleek stand.",
+    category: "Desk Calendar",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "prod-2",
+    sno: 2,
+    sortOrder: 2,
+    name: "Classic 12-Sheet Wall Hanging Calendar",
+    price: 180,
+    imageUrl: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&w=300&q=80",
+    enabled: true,
+    description: "Vibrant large format monthly wall calendar printed on 200 GSM art paper.",
+    category: "Wall Calendar",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "prod-3",
+    sno: 3,
+    sortOrder: 3,
+    name: "Landscape Scenic Photo Wall Calendar",
+    price: 220,
+    imageUrl: "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=300&q=80",
+    enabled: true,
+    description: "Breathtaking natural landscape photos for every month with spacious date grids.",
+    category: "Wall Calendar",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "prod-4",
+    sno: 4,
+    sortOrder: 4,
+    name: "Wooden Base Desk Block Calendar",
+    price: 250,
+    imageUrl: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=300&q=80",
+    enabled: true,
+    description: "Eco-friendly solid wood base with interchangeable monthly calendar cards.",
+    category: "Premium Calendar",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "prod-5",
+    sno: 5,
+    sortOrder: 5,
+    name: "Mini Pocket Planner Calendar 2026",
+    price: 90,
+    imageUrl: "https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=300&q=80",
+    enabled: true,
+    description: "Compact pocket-sized monthly organizer calendar with faux leather cover.",
+    category: "Pocket Calendar",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "prod-6",
+    sno: 6,
+    sortOrder: 6,
+    name: "Tri-Fold Commercial 3-Month View Calendar",
+    price: 200,
+    imageUrl: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&w=300&q=80",
+    enabled: true,
+    description: "Ideal for corporate offices with past, present, and next month visible simultaneously.",
+    category: "Office Calendar",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "prod-7",
+    sno: 7,
+    sortOrder: 7,
+    name: "Magnetic Refrigerator Calendar Board",
+    price: 160,
+    imageUrl: "https://images.unsplash.com/photo-1506784365847-bbad939e9335?auto=format&fit=crop&w=300&q=80",
+    enabled: true,
+    description: "Full magnetic backing calendar sheet for home kitchens and dry-erase notes.",
+    category: "Magnetic Calendar",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "prod-8",
+    sno: 8,
+    sortOrder: 8,
+    name: "Acrylic Stand Luxury Tabletop Calendar",
+    price: 280,
+    imageUrl: "https://images.unsplash.com/photo-1518057111178-44a106bad636?auto=format&fit=crop&w=300&q=80",
+    enabled: true,
+    description: "Crystal clear acrylic frame holding 12 gold-foiled monthly calendar inserts.",
+    category: "Premium Calendar",
+    createdAt: new Date().toISOString()
+  }
+];
 
 let memoryProducts: Product[] = [];
 let memoryOrders: Order[] = [];
@@ -49,6 +146,32 @@ const globalDeletedIds = new Set<string>();
 function resequence(products: Product[]): Product[] {
   products.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
   return products.map((p, idx) => ({ ...p, sno: idx + 1, sortOrder: idx + 1 }));
+}
+
+async function getProductsList(): Promise<Product[]> {
+  if (pool) {
+    try {
+      await ensureDBSeeded();
+      const [rows]: any = await pool.query("SELECT * FROM products ORDER BY sortOrder ASC, sno ASC");
+      if (rows && Array.isArray(rows)) {
+        return rows.map((r: any, idx: number) => ({
+          ...r,
+          sno: idx + 1,
+          sortOrder: idx + 1,
+          enabled: Boolean(r.enabled),
+          price: Number(r.price) || 0
+        }));
+      }
+    } catch (err) {
+      console.error("TiDB error fetching products:", err);
+    }
+  }
+
+  if (memoryProducts.length === 0 && defaultProducts.length > 0) {
+    memoryProducts = [...defaultProducts];
+  }
+  memoryProducts = memoryProducts.filter(p => !globalDeletedIds.has(p.id));
+  return resequence(memoryProducts);
 }
 
 // Admin Authentication
@@ -120,7 +243,7 @@ async function ensureDBSeeded() {
       for (const p of defaultProducts) {
         await pool.query(
           "INSERT IGNORE INTO products (id, sno, sortOrder, name, price, imageUrl, enabled, description, category, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          [p.id, p.sno, p.sortOrder, p.name, p.price, p.imageUrl, p.enabled, p.description, p.category, p.createdAt]
+          [p.id, p.sno, p.sortOrder, p.name, p.price, p.imageUrl, p.enabled ? 1 : 0, p.description, p.category, p.createdAt]
         );
       }
     }
@@ -132,27 +255,8 @@ async function ensureDBSeeded() {
 
 // GET products
 app.get("/api/products", async (_req, res) => {
-  if (pool) {
-    try {
-      await ensureDBSeeded();
-      const [rows]: any = await pool.query("SELECT * FROM products ORDER BY sortOrder ASC, sno ASC");
-      if (rows && Array.isArray(rows)) {
-        const formatted = rows.map((r: any, idx: number) => ({
-          ...r,
-          sno: idx + 1,
-          sortOrder: idx + 1,
-          enabled: Boolean(r.enabled),
-          price: Number(r.price) || 0
-        }));
-        return res.json({ success: true, products: formatted });
-      }
-    } catch (err) {
-      console.error("TiDB error:", err);
-    }
-  }
-  memoryProducts = memoryProducts.filter(p => !globalDeletedIds.has(p.id));
-  memoryProducts = resequence(memoryProducts);
-  res.json({ success: true, products: memoryProducts });
+  const products = await getProductsList();
+  res.json({ success: true, products });
 });
 
 // POST add product
@@ -163,35 +267,37 @@ app.post("/api/products", async (req, res) => {
     return res.status(400).json({ success: false, message: "Product name is required" });
   }
 
-  const nextSno = memoryProducts.length + 1;
+  const currentProducts = await getProductsList();
+  const nextSno = currentProducts.length + 1;
   const newProduct: Product = {
     id: `prod-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     sno: nextSno,
     sortOrder: nextSno,
     name: name.trim(),
     price: price ? Number(price) : 0,
-    imageUrl: imageUrl || "/media/image101.jpeg",
+    imageUrl: imageUrl || "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=300&q=80",
     enabled: enabled !== undefined ? Boolean(enabled) : true,
     description: description || "",
     category: category || "Calendar",
     createdAt: new Date().toISOString()
   };
 
-  memoryProducts.push(newProduct);
+  memoryProducts = [...currentProducts, newProduct];
   memoryProducts = resequence(memoryProducts);
 
   if (pool) {
     try {
       await pool.query(
         "INSERT INTO products (id, sno, sortOrder, name, price, imageUrl, enabled, description, category, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [newProduct.id, newProduct.sno, newProduct.sortOrder, newProduct.name, newProduct.price, newProduct.imageUrl, newProduct.enabled, newProduct.description, newProduct.category, newProduct.createdAt]
+        [newProduct.id, newProduct.sno, newProduct.sortOrder, newProduct.name, newProduct.price, newProduct.imageUrl, newProduct.enabled ? 1 : 0, newProduct.description, newProduct.category, newProduct.createdAt]
       );
     } catch (err) {
       console.error("TiDB insert error:", err);
     }
   }
 
-  res.json({ success: true, product: newProduct, products: memoryProducts });
+  const allProducts = await getProductsList();
+  res.json({ success: true, product: newProduct, products: allProducts });
 });
 
 // PUT / POST update product
@@ -199,13 +305,14 @@ const handleUpdateProductApi = async (req: express.Request, res: express.Respons
   const { id } = req.params;
   const { name, price, imageUrl, enabled, description, category } = req.body;
 
-  const idx = memoryProducts.findIndex(p => p.id === id);
+  const currentProducts = await getProductsList();
+  const idx = currentProducts.findIndex(p => p.id === id);
   if (idx !== -1) {
-    memoryProducts[idx] = { ...memoryProducts[idx], ...req.body };
-    if (name !== undefined) memoryProducts[idx].name = name.trim();
-    if (price !== undefined) memoryProducts[idx].price = Number(price);
+    currentProducts[idx] = { ...currentProducts[idx], ...req.body };
+    if (name !== undefined) currentProducts[idx].name = name.trim();
+    if (price !== undefined) currentProducts[idx].price = Number(price);
 
-    memoryProducts = resequence(memoryProducts);
+    memoryProducts = resequence(currentProducts);
 
     if (pool) {
       try {
@@ -217,7 +324,8 @@ const handleUpdateProductApi = async (req: express.Request, res: express.Respons
         console.error("TiDB update error:", err);
       }
     }
-    res.json({ success: true, product: memoryProducts[idx], products: memoryProducts });
+    const allProducts = await getProductsList();
+    res.json({ success: true, product: memoryProducts[idx], products: allProducts });
   } else {
     res.status(404).json({ success: false, message: "Product not found" });
   }
@@ -373,62 +481,25 @@ app.post("/api/products/bulk-delete", async (req, res) => {
 });
 
 // DELETE single product
-app.delete("/api/products/:id", async (req, res) => {
+const handleDeleteProductApi = async (req: express.Request, res: express.Response) => {
   const { id } = req.params;
   globalDeletedIds.add(id);
-  memoryProducts = memoryProducts.filter(p => !globalDeletedIds.has(p.id));
-  memoryProducts = resequence(memoryProducts);
+  memoryProducts = memoryProducts.filter(p => p.id !== id);
 
   if (pool) {
     try {
       await pool.query("DELETE FROM products WHERE id = ?", [id]);
-      const [rows]: any = await pool.query("SELECT * FROM products ORDER BY sortOrder ASC, sno ASC");
-      if (rows && Array.isArray(rows)) {
-        const formatted = rows.map((r: any, idx: number) => ({
-          ...r,
-          sno: idx + 1,
-          sortOrder: idx + 1,
-          enabled: Boolean(r.enabled),
-          price: Number(r.price) || 0
-        }));
-        return res.json({ success: true, message: "Product deleted successfully", products: formatted });
-      }
     } catch (err) {
       console.error("TiDB delete error:", err);
     }
   }
 
-  res.json({ success: true, message: "Product deleted successfully", products: memoryProducts });
-});
+  const updatedProducts = await getProductsList();
+  res.json({ success: true, message: "Product deleted successfully", products: updatedProducts });
+};
 
-// POST single delete product fallback
-app.post("/api/products/delete/:id", async (req, res) => {
-  const { id } = req.params;
-  globalDeletedIds.add(id);
-  memoryProducts = memoryProducts.filter(p => !globalDeletedIds.has(p.id));
-  memoryProducts = resequence(memoryProducts);
-
-  if (pool) {
-    try {
-      await pool.query("DELETE FROM products WHERE id = ?", [id]);
-      const [rows]: any = await pool.query("SELECT * FROM products ORDER BY sortOrder ASC, sno ASC");
-      if (rows && Array.isArray(rows)) {
-        const formatted = rows.map((r: any, idx: number) => ({
-          ...r,
-          sno: idx + 1,
-          sortOrder: idx + 1,
-          enabled: Boolean(r.enabled),
-          price: Number(r.price) || 0
-        }));
-        return res.json({ success: true, message: "Product deleted successfully", products: formatted });
-      }
-    } catch (err) {
-      console.error("TiDB delete error:", err);
-    }
-  }
-
-  res.json({ success: true, message: "Product deleted successfully", products: memoryProducts });
-});
+app.delete("/api/products/:id", handleDeleteProductApi);
+app.post("/api/products/delete/:id", handleDeleteProductApi);
 
 // GET categories
 app.get("/api/categories", (_req, res) => {
