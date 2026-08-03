@@ -139,8 +139,10 @@ const defaultProducts: Product[] = [
 
 let memoryProducts: Product[] = [];
 let memoryOrders: Order[] = [];
-let memoryCategories: Category[] = [...defaultCategories];
+let memoryCategories: Category[] = [];
 let memorySettings = { whatsappNumber: "9080917850" };
+let isMemoryProductsInitialized = false;
+let isMemoryCategoriesInitialized = false;
 const globalDeletedIds = new Set<string>();
 
 function resequence(products: Product[]): Product[] {
@@ -167,8 +169,9 @@ async function getProductsList(): Promise<Product[]> {
     }
   }
 
-  if (memoryProducts.length === 0 && defaultProducts.length > 0) {
+  if (!isMemoryProductsInitialized) {
     memoryProducts = [...defaultProducts];
+    isMemoryProductsInitialized = true;
   }
   memoryProducts = memoryProducts.filter(p => !globalDeletedIds.has(p.id));
   return resequence(memoryProducts);
@@ -236,9 +239,15 @@ async function ensureDBSeeded() {
       )
     `);
 
-    // Check count
-    const [rows]: any = await pool.query("SELECT COUNT(*) as count FROM products");
-    if (rows && rows[0] && rows[0].count === 0) {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        setting_key VARCHAR(100) PRIMARY KEY,
+        setting_value TEXT
+      )
+    `);
+
+    const [settingRows]: any = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'products_seeded'");
+    if (!settingRows || settingRows.length === 0) {
       // Seed default products ONCE
       for (const p of defaultProducts) {
         await pool.query(
@@ -246,6 +255,7 @@ async function ensureDBSeeded() {
           [p.id, p.sno, p.sortOrder, p.name, p.price, p.imageUrl, p.enabled ? 1 : 0, p.description, p.category, p.createdAt]
         );
       }
+      await pool.query("INSERT INTO settings (setting_key, setting_value) VALUES ('products_seeded', 'true') ON DUPLICATE KEY UPDATE setting_value = 'true'");
     }
     isDBInitialized = true;
   } catch (err) {
@@ -515,14 +525,22 @@ async function ensureCategoryTable() {
       )
     `);
 
-    const [rows]: any = await pool.query("SELECT COUNT(*) as count FROM categories");
-    if (rows && rows[0] && rows[0].count === 0) {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        setting_key VARCHAR(100) PRIMARY KEY,
+        setting_value TEXT
+      )
+    `);
+
+    const [settingRows]: any = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'categories_seeded'");
+    if (!settingRows || settingRows.length === 0) {
       for (const cat of defaultCategories) {
         await pool.query(
           "INSERT IGNORE INTO categories (id, name, sortOrder) VALUES (?, ?, ?)",
           [cat.id, cat.name, cat.sortOrder]
         );
       }
+      await pool.query("INSERT INTO settings (setting_key, setting_value) VALUES ('categories_seeded', 'true') ON DUPLICATE KEY UPDATE setting_value = 'true'");
     }
     isCategoryTableInitialized = true;
   } catch (err) {
@@ -535,7 +553,7 @@ async function getCategoriesList(): Promise<Category[]> {
     try {
       await ensureCategoryTable();
       const [rows]: any = await pool.query("SELECT * FROM categories ORDER BY sortOrder ASC");
-      if (rows && Array.isArray(rows) && rows.length > 0) {
+      if (rows && Array.isArray(rows)) {
         return rows.map((r: any, idx: number) => ({
           id: String(r.id),
           name: String(r.name),
@@ -547,8 +565,9 @@ async function getCategoriesList(): Promise<Category[]> {
     }
   }
 
-  if (memoryCategories.length === 0 && defaultCategories.length > 0) {
+  if (!isMemoryCategoriesInitialized) {
     memoryCategories = [...defaultCategories];
+    isMemoryCategoriesInitialized = true;
   }
   memoryCategories = memoryCategories.filter(c => !globalDeletedCategoryIds.has(c.id));
   return memoryCategories;
