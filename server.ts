@@ -309,7 +309,7 @@ app.post("/api/products/rearrange", (req, res) => {
 });
 
 // Bulk upload products
-app.post("/api/products/bulk", (req, res) => {
+const handleBulkUploadServer = (req: express.Request, res: express.Response) => {
   const db = initDB();
   const { products, replaceExisting } = req.body;
 
@@ -317,13 +317,16 @@ app.post("/api/products/bulk", (req, res) => {
     return res.status(400).json({ success: false, message: "No products provided in request" });
   }
 
+  const existingProducts = replaceExisting ? [] : db.products;
+  const startSno = existingProducts.length;
+
   const newProds: Product[] = products.map((p, idx) => ({
     id: `prod-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
-    sno: idx + 1,
-    sortOrder: idx + 1,
+    sno: startSno + idx + 1,
+    sortOrder: startSno + idx + 1,
     name: p.productName || p.name || `Calendar Product ${idx + 1}`,
     price: p.price ? Number(p.price) : 0,
-    imageUrl: p.imageUrl || "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=300&q=80",
+    imageUrl: p.imageUrl || "/placeholder-image.png",
     enabled: p.enabled !== undefined ? (String(p.enabled).toLowerCase() !== "false" && String(p.enabled).toLowerCase() !== "disabled" && Boolean(p.enabled)) : true,
     description: p.description || "",
     category: p.category || "Calendar",
@@ -333,14 +336,17 @@ app.post("/api/products/bulk", (req, res) => {
   if (replaceExisting) {
     db.products = newProds;
   } else {
-    db.products = [...db.products, ...newProds];
+    db.products = [...existingProducts, ...newProds];
   }
 
   db.products = resequenceProducts(db.products);
   writeDB(db);
 
   res.json({ success: true, message: `Successfully imported ${newProds.length} products`, products: db.products });
-});
+};
+
+app.post("/api/products/bulk", handleBulkUploadServer);
+app.post("/api/products/bulk-upload", handleBulkUploadServer);
 
 // GET categories
 app.get("/api/categories", (req, res) => {

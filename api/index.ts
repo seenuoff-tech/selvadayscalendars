@@ -251,21 +251,23 @@ app.put("/api/products/:id", handleUpdateProductApi);
 app.post("/api/products/update/:id", handleUpdateProductApi);
 
 // POST bulk upload products (Excel Import)
-app.post("/api/products/bulk", async (req, res) => {
+const handleBulkUploadApi = async (req: express.Request, res: express.Response) => {
   const { products, replaceExisting } = req.body;
 
   if (!Array.isArray(products) || products.length === 0) {
     return res.status(400).json({ success: false, message: "No products provided" });
   }
 
-  const startSno = replaceExisting ? 0 : memoryProducts.length;
+  const existingProducts = replaceExisting ? [] : await getProductsList();
+  const startSno = existingProducts.length;
+
   const newProds: Product[] = products.map((p, idx) => ({
     id: `prod-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
     sno: startSno + idx + 1,
     sortOrder: startSno + idx + 1,
     name: p.productName || p.name || `Calendar Product ${idx + 1}`,
     price: p.price ? Number(p.price) : 0,
-    imageUrl: p.imageUrl || "/media/image101.jpeg",
+    imageUrl: p.imageUrl || "/placeholder-image.png",
     enabled: p.enabled !== undefined ? (String(p.enabled).toLowerCase() !== "false" && String(p.enabled).toLowerCase() !== "disabled" && Boolean(p.enabled)) : true,
     description: p.description || "",
     category: p.category || "Calendar",
@@ -275,9 +277,8 @@ app.post("/api/products/bulk", async (req, res) => {
   if (replaceExisting) {
     memoryProducts = newProds;
   } else {
-    memoryProducts = [...memoryProducts, ...newProds];
+    memoryProducts = [...existingProducts, ...newProds];
   }
-
   memoryProducts = resequence(memoryProducts);
 
   if (pool) {
@@ -288,7 +289,7 @@ app.post("/api/products/bulk", async (req, res) => {
       for (const p of newProds) {
         await pool.query(
           "INSERT INTO products (id, sno, sortOrder, name, price, imageUrl, enabled, description, category, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          [p.id, p.sno, p.sortOrder, p.name, p.price, p.imageUrl, p.enabled, p.description, p.category, p.createdAt]
+          [p.id, p.sno, p.sortOrder, p.name, p.price, p.imageUrl, p.enabled ? 1 : 0, p.description, p.category, p.createdAt]
         );
       }
     } catch (err) {
@@ -296,57 +297,12 @@ app.post("/api/products/bulk", async (req, res) => {
     }
   }
 
-  res.json({ success: true, message: `Successfully imported ${newProds.length} products!`, products: memoryProducts });
-});
+  const updatedProducts = await getProductsList();
+  res.json({ success: true, message: `Successfully imported ${newProds.length} products!`, products: updatedProducts });
+};
 
-// POST bulk upload products fallback endpoint
-app.post("/api/products/bulk-upload", async (req, res) => {
-  const { products, replaceExisting } = req.body;
-
-  if (!Array.isArray(products) || products.length === 0) {
-    return res.status(400).json({ success: false, message: "No products provided" });
-  }
-
-  const startSno = replaceExisting ? 0 : memoryProducts.length;
-  const newProds: Product[] = products.map((p, idx) => ({
-    id: `prod-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
-    sno: startSno + idx + 1,
-    sortOrder: startSno + idx + 1,
-    name: p.productName || p.name || `Calendar Product ${idx + 1}`,
-    price: p.price ? Number(p.price) : 0,
-    imageUrl: p.imageUrl || "/media/image101.jpeg",
-    enabled: p.enabled !== undefined ? (String(p.enabled).toLowerCase() !== "false" && String(p.enabled).toLowerCase() !== "disabled" && Boolean(p.enabled)) : true,
-    description: p.description || "",
-    category: p.category || "Calendar",
-    createdAt: new Date().toISOString()
-  }));
-
-  if (replaceExisting) {
-    memoryProducts = newProds;
-  } else {
-    memoryProducts = [...memoryProducts, ...newProds];
-  }
-
-  memoryProducts = resequence(memoryProducts);
-
-  if (pool) {
-    try {
-      if (replaceExisting) {
-        await pool.query("TRUNCATE TABLE products");
-      }
-      for (const p of newProds) {
-        await pool.query(
-          "INSERT INTO products (id, sno, sortOrder, name, price, imageUrl, enabled, description, category, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          [p.id, p.sno, p.sortOrder, p.name, p.price, p.imageUrl, p.enabled, p.description, p.category, p.createdAt]
-        );
-      }
-    } catch (err) {
-      console.error("TiDB bulk insert error:", err);
-    }
-  }
-
-  res.json({ success: true, message: `Successfully imported ${newProds.length} products!`, products: memoryProducts });
-});
+app.post("/api/products/bulk", handleBulkUploadApi);
+app.post("/api/products/bulk-upload", handleBulkUploadApi);
 
 // DELETE bulk products
 const handleBulkDeleteApi = async (req: express.Request, res: express.Response) => {

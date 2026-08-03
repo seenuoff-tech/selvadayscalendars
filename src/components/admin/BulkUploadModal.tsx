@@ -14,7 +14,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ onSuccess }) =
   const [parsedRows, setParsedRows] = useState<BulkUploadRow[]>([]);
   const [mediaLibraryImages, setMediaLibraryImages] = useState<string[]>([]);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const [replaceExisting, setReplaceExisting] = useState<boolean>(false);
+  const [replaceExisting, setReplaceExisting] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [fileName, setFileName] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
