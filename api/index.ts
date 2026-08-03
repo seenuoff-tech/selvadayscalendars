@@ -501,50 +501,127 @@ const handleDeleteProductApi = async (req: express.Request, res: express.Respons
 app.delete("/api/products/:id", handleDeleteProductApi);
 app.post("/api/products/delete/:id", handleDeleteProductApi);
 
+let isCategoryTableInitialized = false;
+const globalDeletedCategoryIds = new Set<string>();
+
+async function ensureCategoryTable() {
+  if (!pool || isCategoryTableInitialized) return;
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id VARCHAR(255) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        sortOrder INT
+      )
+    `);
+
+    const [rows]: any = await pool.query("SELECT COUNT(*) as count FROM categories");
+    if (rows && rows[0] && rows[0].count === 0) {
+      for (const cat of defaultCategories) {
+        await pool.query(
+          "INSERT IGNORE INTO categories (id, name, sortOrder) VALUES (?, ?, ?)",
+          [cat.id, cat.name, cat.sortOrder]
+        );
+      }
+    }
+    isCategoryTableInitialized = true;
+  } catch (err) {
+    console.error("Failed to seed category table:", err);
+  }
+}
+
+async function getCategoriesList(): Promise<Category[]> {
+  if (pool) {
+    try {
+      await ensureCategoryTable();
+      const [rows]: any = await pool.query("SELECT * FROM categories ORDER BY sortOrder ASC");
+      if (rows && Array.isArray(rows) && rows.length > 0) {
+        return rows.map((r: any, idx: number) => ({
+          id: String(r.id),
+          name: String(r.name),
+          sortOrder: Number(r.sortOrder) || (idx + 1)
+        }));
+      }
+    } catch (err) {
+      console.error("TiDB category error:", err);
+    }
+  }
+
+  if (memoryCategories.length === 0 && defaultCategories.length > 0) {
+    memoryCategories = [...defaultCategories];
+  }
+  memoryCategories = memoryCategories.filter(c => !globalDeletedCategoryIds.has(c.id));
+  return memoryCategories;
+}
+
 // GET categories
-app.get("/api/categories", (_req, res) => {
-  res.json({ success: true, categories: memoryCategories });
+app.get("/api/categories", async (_req, res) => {
+  const categories = await getCategoriesList();
+  res.json({ success: true, categories });
 });
 
 // POST add category
-app.post("/api/categories", (req, res) => {
+app.post("/api/categories", async (req, res) => {
   const { name } = req.body;
   if (!name || !name.trim()) {
     return res.status(400).json({ success: false, message: "Category name is required" });
   }
+
+  const currentCategories = await getCategoriesList();
   const newCat: Category = {
     id: `cat-${Date.now()}`,
     name: name.trim(),
-    sortOrder: memoryCategories.length + 1
+    sortOrder: currentCategories.length + 1
   };
-  memoryCategories.push(newCat);
-  res.json({ success: true, category: newCat, categories: memoryCategories });
+
+  memoryCategories = [...currentCategories, newCat];
+
+  if (pool) {
+    try {
+      await ensureCategoryTable();
+      await pool.query(
+        "INSERT INTO categories (id, name, sortOrder) VALUES (?, ?, ?)",
+        [newCat.id, newCat.name, newCat.sortOrder]
+      );
+    } catch (err) {
+      console.error("TiDB category insert error:", err);
+    }
+  }
+
+  const updatedCategories = await getCategoriesList();
+  res.json({ success: true, category: newCat, categories: updatedCategories });
 });
 
 // PUT / POST update category
 const handleUpdateCategoryApi = async (req: express.Request, res: express.Response) => {
   const { id } = req.params;
   const { name } = req.body;
-  const idx = memoryCategories.findIndex(c => c.id === id);
+
+  const currentCategories = await getCategoriesList();
+  const idx = currentCategories.findIndex(c => c.id === id);
   if (idx !== -1) {
     if (name && name.trim()) {
-      const oldName = memoryCategories[idx].name;
+      const oldName = currentCategories[idx].name;
       const newName = name.trim();
-      memoryCategories[idx].name = newName;
-      memoryProducts.forEach(p => {
-        if (p.category === oldName) p.category = newName;
-      });
+      currentCategories[idx].name = newName;
+      memoryCategories = [...currentCategories];
 
       if (pool) {
         try {
+          await ensureCategoryTable();
           await pool.query("UPDATE categories SET name = ? WHERE id = ?", [newName, id]);
           await pool.query("UPDATE products SET category = ? WHERE category = ?", [newName, oldName]);
         } catch (err) {
           console.error("TiDB category update error:", err);
         }
       }
+
+      memoryProducts.forEach(p => {
+        if (p.category === oldName) p.category = newName;
+      });
     }
-    res.json({ success: true, category: memoryCategories[idx], categories: memoryCategories });
+    const updatedCategories = await getCategoriesList();
+    res.json({ success: true, category: currentCategories[idx], categories: updatedCategories });
   } else {
     res.status(404).json({ success: false, message: "Category not found" });
   }
@@ -556,17 +633,20 @@ app.post("/api/categories/update/:id", handleUpdateCategoryApi);
 // DELETE / POST delete category
 const handleDeleteCategoryApi = async (req: express.Request, res: express.Response) => {
   const { id } = req.params;
+  globalDeletedCategoryIds.add(id);
   memoryCategories = memoryCategories.filter(c => c.id !== id);
 
   if (pool) {
     try {
+      await ensureCategoryTable();
       await pool.query("DELETE FROM categories WHERE id = ?", [id]);
     } catch (err) {
       console.error("TiDB category delete error:", err);
     }
   }
 
-  res.json({ success: true, categories: memoryCategories });
+  const updatedCategories = await getCategoriesList();
+  res.json({ success: true, categories: updatedCategories });
 };
 
 app.delete("/api/categories/:id", handleDeleteCategoryApi);
