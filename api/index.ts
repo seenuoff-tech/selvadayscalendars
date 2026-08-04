@@ -682,8 +682,43 @@ app.delete("/api/orders/:id", async (req, res) => {
   res.json({ success: true, message: "Order deleted successfully" });
 });
 
+let isMediaTableInitialized = false;
+
+async function ensureMediaTable() {
+  if (!pool || isMediaTableInitialized) return;
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS media (
+        filename VARCHAR(255) PRIMARY KEY,
+        data LONGTEXT,
+        createdAt DATETIME
+      )
+    `);
+    isMediaTableInitialized = true;
+  } catch (err) {
+    console.error("Failed to create media table in TiDB:", err);
+  }
+}
+
 // GET media
-app.get("/api/media", (_req, res) => {
+app.get("/api/media", async (_req, res) => {
+  if (pool) {
+    try {
+      await ensureMediaTable();
+      const [rows]: any = await pool.query("SELECT filename FROM media ORDER BY createdAt DESC");
+      if (rows && Array.isArray(rows)) {
+        const media = rows.map((r: any) => ({
+          name: r.filename,
+          url: `/api/media/file/${r.filename}`
+        }));
+        return res.json({ success: true, media });
+      }
+    } catch (err) {
+      console.error("TiDB fetch media error:", err);
+    }
+  }
+
+  // Fallback to local FS
   try {
     const MEDIA_DIR = path.join(process.cwd(), "Public", "media");
     if (!fs.existsSync(MEDIA_DIR)) {
@@ -701,42 +736,86 @@ app.get("/api/media", (_req, res) => {
 });
 
 // POST upload media
-app.post("/api/media", (req, res) => {
+app.post("/api/media", async (req, res) => {
   try {
     const { filename, base64 } = req.body;
     if (!filename || !base64) {
       return res.status(400).json({ success: false, message: "Filename and base64 string are required" });
     }
 
+    const safeFilename = filename.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    const base64Data = base64.replace(/^data:image\/\w+;base64,/, "");
+
+    if (pool) {
+      await ensureMediaTable();
+      await pool.query(
+        "INSERT INTO media (filename, data, createdAt) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = ?",
+        [safeFilename, base64Data, new Date(), base64Data]
+      );
+      return res.json({ success: true, message: "Image uploaded successfully", url: `/api/media/file/${safeFilename}` });
+    }
+
+    // Fallback FS
     const MEDIA_DIR = path.join(process.cwd(), "Public", "media");
     if (!fs.existsSync(MEDIA_DIR)) {
       fs.mkdirSync(MEDIA_DIR, { recursive: true });
     }
-
-    const safeFilename = filename.replace(/[^a-zA-Z0-9.\-_]/g, "_");
-    const base64Data = base64.replace(/^data:image\/\w+;base64,/, "");
     const filePath = path.join(MEDIA_DIR, safeFilename);
-
     fs.writeFileSync(filePath, base64Data, 'base64');
     res.json({ success: true, message: "Image uploaded successfully", url: `/media/${safeFilename}` });
   } catch (err) {
+    console.error("Media upload error:", err);
     res.status(500).json({ success: false, message: "Error uploading image" });
   }
 });
 
+// GET serve media file from DB
+app.get("/api/media/file/:filename", async (req, res) => {
+  if (pool) {
+    try {
+      const { filename } = req.params;
+      const [rows]: any = await pool.query("SELECT data FROM media WHERE filename = ?", [filename]);
+      if (rows && rows.length > 0) {
+        const base64Data = rows[0].data;
+        const imgBuffer = Buffer.from(base64Data, 'base64');
+        
+        const ext = path.extname(filename).toLowerCase();
+        let mimeType = 'image/jpeg';
+        if (ext === '.png') mimeType = 'image/png';
+        else if (ext === '.gif') mimeType = 'image/gif';
+        else if (ext === '.webp') mimeType = 'image/webp';
+        
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Cache-Control', 'public, max-age=31536000');
+        return res.send(imgBuffer);
+      }
+    } catch (err) {
+      console.error("Fetch image error:", err);
+    }
+  }
+  res.status(404).send("Not found");
+});
+
 // DELETE media item
-app.delete("/api/media/:filename", (req, res) => {
+app.delete("/api/media/:filename", async (req, res) => {
   try {
     const { filename } = req.params;
     const safeFilename = path.basename(filename);
+
+    if (pool) {
+      await ensureMediaTable();
+      await pool.query("DELETE FROM media WHERE filename = ?", [safeFilename]);
+      return res.json({ success: true });
+    }
+
+    // Fallback FS
     const MEDIA_DIR = path.join(process.cwd(), "Public", "media");
     const filePath = path.join(MEDIA_DIR, safeFilename);
-
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
-      res.json({ success: true });
+      return res.json({ success: true });
     } else {
-      res.status(404).json({ success: false, message: "File not found" });
+      return res.status(404).json({ success: false, message: "File not found" });
     }
   } catch (err) {
     res.status(500).json({ success: false, message: "Error deleting file" });
@@ -744,12 +823,20 @@ app.delete("/api/media/:filename", (req, res) => {
 });
 
 // POST bulk delete media
-app.post("/api/media/bulk-delete", (req, res) => {
+app.post("/api/media/bulk-delete", async (req, res) => {
   try {
     const { filenames } = req.body;
-    const MEDIA_DIR = path.join(process.cwd(), "Public", "media");
+    
+    if (Array.isArray(filenames) && filenames.length > 0) {
+      if (pool) {
+        await ensureMediaTable();
+        const placeholders = filenames.map(() => "?").join(",");
+        await pool.query(`DELETE FROM media WHERE filename IN (${placeholders})`, filenames);
+        return res.json({ success: true });
+      }
 
-    if (Array.isArray(filenames)) {
+      // Fallback FS
+      const MEDIA_DIR = path.join(process.cwd(), "Public", "media");
       filenames.forEach(f => {
         const safe = path.basename(f);
         const p = path.join(MEDIA_DIR, safe);

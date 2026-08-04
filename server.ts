@@ -28,6 +28,7 @@ const DB_FILE = path.join(DB_DIR, "db.json");
 
 interface DBData {
   products: Product[];
+  deletedProducts?: Product[];
   orders: Order[];
   categories: Category[];
   adminPasswordHash?: string;
@@ -45,10 +46,11 @@ function initDB(): DBData {
   if (!fs.existsSync(DB_FILE)) {
     const initialData: DBData = {
       products: defaultProducts,
+      deletedProducts: [],
       orders: [
         {
           id: "ord-101",
-          orderNumber: "ORD-2026-001",
+          orderNumber: "ss202601",
           customerName: "Anand Kumar",
           mobileNumber: "9876543210",
           city: "Mumbai",
@@ -72,13 +74,14 @@ function initDB(): DBData {
     const fileContent = fs.readFileSync(DB_FILE, "utf-8");
     const data = JSON.parse(fileContent);
     if (!data.products) data.products = defaultProducts;
+    if (!data.deletedProducts) data.deletedProducts = [];
     if (!data.orders) data.orders = [];
     if (!data.categories) data.categories = defaultCategories;
     if (!data.settings) data.settings = { whatsappNumber: "9080917850" };
     return data;
   } catch (err) {
     console.error("Error reading DB file, creating fresh DB:", err);
-    const initialData: DBData = { products: defaultProducts, orders: [], categories: defaultCategories, settings: { whatsappNumber: "9080917850" } };
+    const initialData: DBData = { products: defaultProducts, deletedProducts: [], orders: [], categories: defaultCategories, settings: { whatsappNumber: "9080917850" } };
     fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), "utf-8");
     return initialData;
   }
@@ -131,6 +134,49 @@ app.post("/api/settings", (req, res) => {
   res.json({ success: true, settings: db.settings });
 });
 
+// TRASH APIS: GET trash, RESTORE product, PERMANENT DELETE
+app.get("/api/products/trash", (req, res) => {
+  const db = initDB();
+  res.json({ success: true, deletedProducts: db.deletedProducts || [] });
+});
+
+app.post("/api/products/trash/restore/:id", (req, res) => {
+  const db = initDB();
+  const { id } = req.params;
+  if (!db.deletedProducts) db.deletedProducts = [];
+
+  const trashIndex = db.deletedProducts.findIndex(p => p.id === id);
+  if (trashIndex === -1) {
+    return res.status(404).json({ success: false, message: "Product not found in Trash" });
+  }
+
+  const [restoredProduct] = db.deletedProducts.splice(trashIndex, 1);
+  db.products.push(restoredProduct);
+  db.products = resequenceProducts(db.products);
+  writeDB(db);
+
+  res.json({ success: true, message: "Product restored successfully", products: db.products, deletedProducts: db.deletedProducts });
+});
+
+app.delete("/api/products/trash/permanent/:id", (req, res) => {
+  const db = initDB();
+  const { id } = req.params;
+  if (!db.deletedProducts) db.deletedProducts = [];
+
+  db.deletedProducts = db.deletedProducts.filter(p => p.id !== id);
+  writeDB(db);
+
+  res.json({ success: true, message: "Product permanently deleted", deletedProducts: db.deletedProducts });
+});
+
+app.post("/api/products/trash/empty", (req, res) => {
+  const db = initDB();
+  db.deletedProducts = [];
+  writeDB(db);
+
+  res.json({ success: true, message: "Trash emptied successfully", deletedProducts: [] });
+});
+
 // GET products
 app.get("/api/products", (req, res) => {
   const db = initDB();
@@ -166,6 +212,88 @@ app.post("/api/products", (req, res) => {
   writeDB(db);
 
   res.json({ success: true, product: newProduct, products: db.products });
+});
+
+// DELETE bulk products (move to Trash)
+app.delete("/api/products/bulk", async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ success: false, message: "No product IDs provided" });
+  }
+
+  const db = initDB();
+  if (!db.deletedProducts) db.deletedProducts = [];
+
+  const toDelete = db.products.filter((p) => ids.includes(p.id));
+  db.deletedProducts.push(...toDelete);
+  db.products = db.products.filter((p) => !ids.includes(p.id));
+  db.products = resequenceProducts(db.products);
+  writeDB(db);
+
+  res.json({
+    success: true,
+    message: `Successfully moved ${toDelete.length} products to Trash`,
+    products: db.products,
+    deletedProducts: db.deletedProducts,
+  });
+});
+
+// POST bulk delete products fallback
+app.post("/api/products/bulk-delete", async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ success: false, message: "No product IDs provided" });
+  }
+
+  const db = initDB();
+  if (!db.deletedProducts) db.deletedProducts = [];
+
+  const toDelete = db.products.filter((p) => ids.includes(p.id));
+  db.deletedProducts.push(...toDelete);
+  db.products = db.products.filter((p) => !ids.includes(p.id));
+  db.products = resequenceProducts(db.products);
+  writeDB(db);
+
+  res.json({
+    success: true,
+    message: `Successfully moved ${toDelete.length} products to Trash`,
+    products: db.products,
+    deletedProducts: db.deletedProducts,
+  });
+});
+
+app.post("/api/products/rearrange", (req, res) => {
+  const db = initDB();
+  const { productIds } = req.body;
+
+  if (!Array.isArray(productIds)) {
+    return res.status(400).json({ success: false, message: "productIds array is required" });
+  }
+
+  const map = new Map(db.products.map(p => [p.id, p]));
+  const rearranged: Product[] = [];
+
+  productIds.forEach((id, idx) => {
+    const prod = map.get(id);
+    if (prod) {
+      prod.sortOrder = idx + 1;
+      prod.sno = idx + 1;
+      rearranged.push(prod);
+      map.delete(id);
+    }
+  });
+
+  map.forEach(prod => {
+    const nextSort = rearranged.length + 1;
+    prod.sortOrder = nextSort;
+    prod.sno = nextSort;
+    rearranged.push(prod);
+  });
+
+  db.products = rearranged;
+  writeDB(db);
+
+  res.json({ success: true, products: db.products });
 });
 
 // PUT / POST edit product
@@ -211,67 +339,28 @@ app.post("/api/products/toggle/:id", (req, res) => {
   res.json({ success: true, product: db.products[index], products: db.products });
 });
 
-// DELETE bulk products
-app.delete("/api/products/bulk", async (req, res) => {
-  const { ids } = req.body;
-  if (!Array.isArray(ids) || ids.length === 0) {
-    return res.status(400).json({ success: false, message: "No product IDs provided" });
-  }
-
-  const db = initDB();
-  const initCount = db.products.length;
-  db.products = db.products.filter((p) => !ids.includes(p.id));
-  db.products = resequenceProducts(db.products);
-  writeDB(db);
-
-  res.json({
-    success: true,
-    message: `Successfully deleted ${initCount - db.products.length} products`,
-    products: db.products,
-  });
-});
-
-// POST bulk delete products fallback
-app.post("/api/products/bulk-delete", async (req, res) => {
-  const { ids } = req.body;
-  if (!Array.isArray(ids) || ids.length === 0) {
-    return res.status(400).json({ success: false, message: "No product IDs provided" });
-  }
-
-  const db = initDB();
-  const initCount = db.products.length;
-  db.products = db.products.filter((p) => !ids.includes(p.id));
-  db.products = resequenceProducts(db.products);
-  writeDB(db);
-
-  res.json({
-    success: true,
-    message: `Successfully deleted ${initCount - db.products.length} products`,
-    products: db.products,
-  });
-});
-
-// DELETE / POST single product
+// DELETE / POST single product (move to Trash)
 const handleDeleteSingleProduct = (req: express.Request, res: express.Response) => {
   const db = initDB();
   const { id } = req.params;
+  if (!db.deletedProducts) db.deletedProducts = [];
 
-  const initialCount = db.products.length;
-  db.products = db.products.filter(p => p.id !== id);
-
-  if (db.products.length === initialCount) {
+  const prodIndex = db.products.findIndex(p => p.id === id);
+  if (prodIndex === -1) {
     return res.status(404).json({ success: false, message: "Product not found" });
   }
+
+  const [deletedProd] = db.products.splice(prodIndex, 1);
+  db.deletedProducts.push(deletedProd);
 
   db.products = resequenceProducts(db.products);
   writeDB(db);
 
-  res.json({ success: true, message: "Product deleted successfully", products: db.products });
+  res.json({ success: true, message: "Product moved to Trash", products: db.products, deletedProducts: db.deletedProducts });
 };
 
 app.delete("/api/products/:id", handleDeleteSingleProduct);
 app.post("/api/products/delete/:id", handleDeleteSingleProduct);
-
 
 app.post("/api/products/rearrange", (req, res) => {
   const db = initDB();
@@ -455,7 +544,8 @@ app.post("/api/orders", (req, res) => {
   const totalQty = validItems.reduce((acc: number, item: any) => acc + Number(item.qty), 0);
   const totalPrice = validItems.reduce((acc: number, item: any) => acc + (Number(item.qty) * (Number(item.unitPrice) || 0)), 0);
 
-  const orderNum = `ORD-${new Date().getFullYear()}-${String(db.orders.length + 1).padStart(3, '0')}`;
+  const orderCount = db.orders.length + 1;
+  const orderNum = `ss2026${String(orderCount).padStart(2, '0')}`;
 
   const newOrder: Order = {
     id: `ord-${Date.now()}`,

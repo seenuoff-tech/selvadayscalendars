@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   LayoutDashboard, Layers, ShoppingBag, FileSpreadsheet, LogOut,
-  Store, ShieldCheck, RefreshCw
+  Store, ShieldCheck, RefreshCw, Trash2
 } from 'lucide-react';
 import { Product, Order } from '../../types';
 import { AdminDashboard } from './AdminDashboard';
@@ -11,6 +11,7 @@ import { BulkUploadModal } from './BulkUploadModal';
 import { CategoryManagement } from './CategoryManagement';
 import { MediaManagement } from './MediaManagement';
 import { SettingsPanel } from './SettingsPanel';
+import { TrashModal } from './TrashModal';
 import { Image as ImageIcon, Settings as SettingsIcon } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -30,7 +31,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   onLogout,
   onExitToStore,
 }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'categories' | 'orders' | 'bulk' | 'media' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'categories' | 'orders' | 'bulk' | 'media' | 'settings' | 'trash'>('dashboard');
 
   const navItemClass = (isActive: boolean) => 
     `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
@@ -79,6 +80,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           <button onClick={() => setActiveTab('media')} className={navItemClass(activeTab === 'media')}>
             <ImageIcon className="w-5 h-5" />
             <span>Media Library</span>
+          </button>
+
+          <button onClick={() => setActiveTab('trash')} className={navItemClass(activeTab === 'trash')}>
+            <Trash2 className="w-5 h-5 text-red-300" />
+            <span>Trash Bin</span>
           </button>
 
           <button onClick={() => setActiveTab('bulk')} className={navItemClass(activeTab === 'bulk')}>
@@ -137,6 +143,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               <OrderManagement 
                 orders={orders} 
                 onRefresh={onRefresh} 
+              />
+            )}
+            {activeTab === 'trash' && (
+              <TrashModal
+                isOpen={true}
+                isInline={true}
+                onClose={() => setActiveTab('products')}
+                onRefresh={onRefresh}
               />
             )}
             {activeTab === 'bulk' && (

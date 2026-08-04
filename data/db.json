@@ -1,239 +1,390 @@
 {
   "products": [
     {
-      "id": "prod-1785697894889-12-733",
+      "id": "prod-1785865814534-4-154",
       "sno": 1,
       "sortOrder": 1,
+      "name": "Laxmi(Blue)102",
+      "price": 0,
+      "imageUrl": "/media/image102.jpeg",
+      "enabled": true,
+      "description": "Large 12-sheet wall hanging calendar",
+      "category": "Wall Calendar",
+      "createdAt": "2026-08-04T17:50:14.534Z"
+    },
+    {
+      "id": "prod-1785865814534-5-135",
+      "sno": 2,
+      "sortOrder": 2,
+      "name": "Pillaiyar(Red)103",
+      "price": 0,
+      "imageUrl": "/media/image103.jpeg",
+      "enabled": true,
+      "description": "Solid wood block calendar with monthly cards",
+      "category": "Wall Calendar",
+      "createdAt": "2026-08-04T17:50:14.534Z"
+    },
+    {
+      "id": "prod-1785865814534-6-32",
+      "sno": 3,
+      "sortOrder": 3,
+      "name": "Pillaiyar(Blue)104",
+      "price": 0,
+      "imageUrl": "/media/image104.jpeg",
+      "enabled": true,
+      "description": "12-month desk calendar with spiral binding",
+      "category": "Wall Calendar",
+      "createdAt": "2026-08-04T17:50:14.534Z"
+    },
+    {
+      "id": "prod-1785865814534-7-555",
+      "sno": 4,
+      "sortOrder": 4,
+      "name": "Pillaiyar(Megata)105",
+      "price": 0,
+      "imageUrl": "/media/image105.jpeg",
+      "enabled": true,
+      "description": "Large 12-sheet wall hanging calendar",
+      "category": "Wall Calendar",
+      "createdAt": "2026-08-04T17:50:14.534Z"
+    },
+    {
+      "id": "prod-1785865814534-8-442",
+      "sno": 5,
+      "sortOrder": 5,
+      "name": "Tirupathi Laxmi 106",
+      "price": 0,
+      "imageUrl": "/media/image106.jpeg",
+      "enabled": true,
+      "description": "Solid wood block calendar with monthly cards",
+      "category": "Wall Calendar",
+      "createdAt": "2026-08-04T17:50:14.534Z"
+    },
+    {
+      "id": "prod-1785865814534-9-189",
+      "sno": 6,
+      "sortOrder": 6,
+      "name": "Tirupathi (Maroon) 107",
+      "price": 0,
+      "imageUrl": "/media/image107.jpeg",
+      "enabled": true,
+      "description": "12-month desk calendar with spiral binding",
+      "category": "Wall Calendar",
+      "createdAt": "2026-08-04T17:50:14.534Z"
+    },
+    {
+      "id": "prod-1785865814534-10-589",
+      "sno": 7,
+      "sortOrder": 7,
+      "name": "Tirupathi (Green) 108",
+      "price": 0,
+      "imageUrl": "/media/image108.jpeg",
+      "enabled": true,
+      "description": "Large 12-sheet wall hanging calendar",
+      "category": "Wall Calendar",
+      "createdAt": "2026-08-04T17:50:14.534Z"
+    },
+    {
+      "id": "prod-1785865814534-11-467",
+      "sno": 8,
+      "sortOrder": 8,
+      "name": "Murugan Pillaiyar 109",
+      "price": 0,
+      "imageUrl": "/media/image109.jpeg",
+      "enabled": true,
+      "description": "Solid wood block calendar with monthly cards",
+      "category": "Wall Calendar",
+      "createdAt": "2026-08-04T17:50:14.534Z"
+    },
+    {
+      "id": "prod-1785865814534-12-7",
+      "sno": 9,
+      "sortOrder": 9,
       "name": "Saravanan 110",
       "price": 0,
       "imageUrl": "/media/image110.jpeg",
       "enabled": true,
       "description": "12-month desk calendar with spiral binding",
       "category": "Wall Calendar",
-      "createdAt": "2026-08-02T19:11:34.889Z"
+      "createdAt": "2026-08-04T17:50:14.534Z"
     },
     {
-      "id": "prod-1785697894889-13-54",
-      "sno": 2,
-      "sortOrder": 2,
+      "id": "prod-1785865814534-13-422",
+      "sno": 10,
+      "sortOrder": 10,
       "name": "T.Murugan (Purble) 111",
       "price": 0,
       "imageUrl": "/media/image111.jpeg",
       "enabled": true,
       "description": "Large 12-sheet wall hanging calendar",
       "category": "Wall Calendar",
-      "createdAt": "2026-08-02T19:11:34.889Z"
+      "createdAt": "2026-08-04T17:50:14.534Z"
     },
     {
-      "id": "prod-1785697894889-14-918",
-      "sno": 3,
-      "sortOrder": 3,
+      "id": "prod-1785865814534-14-263",
+      "sno": 11,
+      "sortOrder": 11,
       "name": "T.Murugan (Blue) 112",
       "price": 0,
       "imageUrl": "/media/image112.jpeg",
       "enabled": true,
       "description": "Solid wood block calendar with monthly cards",
       "category": "Wall Calendar",
-      "createdAt": "2026-08-02T19:11:34.889Z"
+      "createdAt": "2026-08-04T17:50:14.534Z"
     },
     {
-      "id": "prod-1785697894889-15-958",
-      "sno": 4,
-      "sortOrder": 4,
+      "id": "prod-1785865814534-15-976",
+      "sno": 12,
+      "sortOrder": 12,
       "name": "Palani Murugan 113",
       "price": 0,
       "imageUrl": "/media/image113.jpeg",
       "enabled": true,
       "description": "12-month desk calendar with spiral binding",
       "category": "Wall Calendar",
-      "createdAt": "2026-08-02T19:11:34.889Z"
+      "createdAt": "2026-08-04T17:50:14.534Z"
     },
     {
-      "id": "prod-1785697894889-16-539",
-      "sno": 5,
-      "sortOrder": 5,
+      "id": "prod-1785865814534-16-144",
+      "sno": 13,
+      "sortOrder": 13,
       "name": "Murugan Half 114",
       "price": 0,
       "imageUrl": "/media/image114.jpeg",
       "enabled": true,
       "description": "Large 12-sheet wall hanging calendar",
       "category": "Wall Calendar",
-      "createdAt": "2026-08-02T19:11:34.889Z"
+      "createdAt": "2026-08-04T17:50:14.534Z"
     },
     {
-      "id": "prod-1785697894889-17-306",
-      "sno": 6,
-      "sortOrder": 6,
+      "id": "prod-1785865814534-17-291",
+      "sno": 14,
+      "sortOrder": 14,
       "name": "Murugan Om 115",
       "price": 0,
       "imageUrl": "/media/image115.jpeg",
       "enabled": true,
       "description": "Solid wood block calendar with monthly cards",
       "category": "Wall Calendar",
-      "createdAt": "2026-08-02T19:11:34.889Z"
+      "createdAt": "2026-08-04T17:50:14.534Z"
     },
     {
-      "id": "prod-1785697894889-18-122",
-      "sno": 7,
-      "sortOrder": 7,
+      "id": "prod-1785865814534-18-459",
+      "sno": 15,
+      "sortOrder": 15,
       "name": "Murugan Oti Vaa 116",
       "price": 0,
       "imageUrl": "/media/image116.jpeg",
       "enabled": true,
       "description": "12-month desk calendar with spiral binding",
       "category": "Wall Calendar",
-      "createdAt": "2026-08-02T19:11:34.889Z"
+      "createdAt": "2026-08-04T17:50:14.534Z"
     },
     {
-      "id": "prod-1785697894889-19-661",
-      "sno": 8,
-      "sortOrder": 8,
+      "id": "prod-1785865814534-19-651",
+      "sno": 16,
+      "sortOrder": 16,
       "name": "T.Murugan Arupadai 117",
       "price": 0,
       "imageUrl": "/media/image117.jpeg",
       "enabled": true,
       "description": "Large 12-sheet wall hanging calendar",
       "category": "Wall Calendar",
-      "createdAt": "2026-08-02T19:11:34.889Z"
+      "createdAt": "2026-08-04T17:50:14.534Z"
     },
     {
-      "id": "prod-1785697894889-20-992",
-      "sno": 9,
-      "sortOrder": 9,
+      "id": "prod-1785865814534-20-614",
+      "sno": 17,
+      "sortOrder": 17,
       "name": "P.Murugan Arupadai 118",
       "price": 0,
       "imageUrl": "/media/image118.jpeg",
       "enabled": true,
       "description": "Solid wood block calendar with monthly cards",
       "category": "Wall Calendar",
-      "createdAt": "2026-08-02T19:11:34.889Z"
+      "createdAt": "2026-08-04T17:50:14.534Z"
     },
     {
-      "id": "prod-1785697894889-21-358",
-      "sno": 10,
-      "sortOrder": 10,
+      "id": "prod-1785865814534-21-300",
+      "sno": 18,
+      "sortOrder": 18,
       "name": "Murugan Motivation 119",
       "price": 0,
       "imageUrl": "/media/image119.jpeg",
       "enabled": true,
       "description": "12-month desk calendar with spiral binding",
       "category": "Wall Calendar",
-      "createdAt": "2026-08-02T19:11:34.889Z"
+      "createdAt": "2026-08-04T17:50:14.534Z"
     },
     {
-      "id": "prod-1785697894889-22-35",
-      "sno": 11,
-      "sortOrder": 11,
+      "id": "prod-1785865814534-22-470",
+      "sno": 19,
+      "sortOrder": 19,
       "name": "Vel Murugan 120",
       "price": 0,
       "imageUrl": "/media/image120.jpeg",
       "enabled": true,
       "description": "Large 12-sheet wall hanging calendar",
       "category": "Wall Calendar",
-      "createdAt": "2026-08-02T19:11:34.889Z"
+      "createdAt": "2026-08-04T17:50:14.534Z"
     },
     {
-      "id": "prod-1785697894889-23-902",
-      "sno": 12,
-      "sortOrder": 12,
+      "id": "prod-1785865814534-23-390",
+      "sno": 20,
+      "sortOrder": 20,
       "name": "Siva Family 121",
       "price": 0,
       "imageUrl": "/media/image121.jpeg",
       "enabled": true,
       "description": "Solid wood block calendar with monthly cards",
       "category": "Wall Calendar",
-      "createdAt": "2026-08-02T19:11:34.889Z"
+      "createdAt": "2026-08-04T17:50:14.534Z"
     },
     {
-      "id": "prod-1785697894889-24-524",
-      "sno": 13,
-      "sortOrder": 13,
+      "id": "prod-1785865814534-24-297",
+      "sno": 21,
+      "sortOrder": 21,
       "name": "Jesus 122",
       "price": 0,
       "imageUrl": "/media/image122.jpeg",
       "enabled": true,
       "description": "12-month desk calendar with spiral binding",
       "category": "Wall Calendar",
-      "createdAt": "2026-08-02T19:11:34.889Z"
+      "createdAt": "2026-08-04T17:50:14.534Z"
     },
     {
-      "id": "prod-1785697894889-25-77",
-      "sno": 14,
-      "sortOrder": 14,
+      "id": "prod-1785865814534-25-743",
+      "sno": 22,
+      "sortOrder": 22,
       "name": "Velankanni Matha 123",
       "price": 0,
       "imageUrl": "/media/image123.jpeg",
       "enabled": true,
       "description": "Large 12-sheet wall hanging calendar",
       "category": "Wall Calendar",
-      "createdAt": "2026-08-02T19:11:34.889Z"
+      "createdAt": "2026-08-04T17:50:14.534Z"
     },
     {
-      "id": "prod-1785697894889-26-806",
-      "sno": 15,
-      "sortOrder": 15,
+      "id": "prod-1785865814534-26-272",
+      "sno": 23,
+      "sortOrder": 23,
       "name": "Mecca Madina 124",
       "price": 0,
       "imageUrl": "/media/image124.jpeg",
       "enabled": true,
       "description": "Solid wood block calendar with monthly cards",
       "category": "Wall Calendar",
-      "createdAt": "2026-08-02T19:11:34.889Z"
+      "createdAt": "2026-08-04T17:50:14.534Z"
     }
   ],
   "orders": [
     {
-      "id": "ord-1785769126513",
-      "orderNumber": "ORD-2026-002",
-      "customerName": "seenu g",
-      "mobileNumber": "07894561230",
+      "id": "ord-1785866269910",
+      "orderNumber": "ss202603",
+      "customerName": "seenu",
+      "mobileNumber": "9080987788",
       "city": "srivilliputtur",
       "items": [
         {
-          "productId": "prod-1785697894889-12-733",
+          "productId": "prod-1785865814534-4-154",
           "sno": 1,
-          "productName": "Saravanan 110",
-          "qty": 6,
-          "imageUrl": "/media/image110.jpeg"
+          "productName": "Laxmi(Blue)102",
+          "qty": 3,
+          "imageUrl": "/media/image102.jpeg"
         },
         {
-          "productId": "prod-1785697894889-13-54",
+          "productId": "prod-1785865814534-5-135",
           "sno": 2,
-          "productName": "T.Murugan (Purble) 111",
-          "qty": 4,
-          "imageUrl": "/media/image111.jpeg"
-        },
-        {
-          "productId": "prod-1785697894889-14-918",
-          "sno": 3,
-          "productName": "T.Murugan (Blue) 112",
-          "qty": 4,
-          "imageUrl": "/media/image112.jpeg"
+          "productName": "Pillaiyar(Red)103",
+          "qty": 3,
+          "imageUrl": "/media/image103.jpeg"
         }
       ],
-      "totalQty": 14,
-      "status": "Pending",
-      "createdAt": "2026-08-03T14:58:46.513Z",
+      "totalQty": 6,
+      "status": "Confirmed",
+      "createdAt": "2026-08-04T17:57:49.910Z",
       "notes": ""
     },
     {
-      "id": "ord-1785569796038",
-      "orderNumber": "ORD-2026-002",
-      "customerName": "seenu g",
-      "mobileNumber": "07894561230",
+      "id": "ord-1785866167607",
+      "orderNumber": "ss202602",
+      "customerName": "Muthurasu M",
+      "mobileNumber": "08877994455",
       "city": "srivilliputtur",
       "items": [
         {
-          "productId": "prod-1785569315761-0-219",
-          "sno": 1,
-          "productName": "2026 Desk Spiral Calendar",
+          "productId": "prod-1785865814534-22-470",
+          "sno": 20,
+          "productName": "Vel Murugan 120",
+          "qty": 3,
+          "imageUrl": "/media/image120.jpeg"
+        },
+        {
+          "productId": "prod-1785865814534-23-390",
+          "sno": 21,
+          "productName": "Siva Family 121",
           "qty": 4,
-          "imageUrl": "/placeholder-image.png"
+          "imageUrl": "/media/image121.jpeg"
+        },
+        {
+          "productId": "prod-1785865814534-24-297",
+          "sno": 22,
+          "productName": "Jesus 122",
+          "qty": 2,
+          "imageUrl": "/media/image122.jpeg"
+        },
+        {
+          "productId": "prod-1785865814534-25-743",
+          "sno": 23,
+          "productName": "Velankanni Matha 123",
+          "qty": 3,
+          "imageUrl": "/media/image123.jpeg"
         }
       ],
-      "totalQty": 4,
+      "totalQty": 12,
+      "status": "Confirmed",
+      "createdAt": "2026-08-04T17:56:07.607Z",
+      "notes": ""
+    },
+    {
+      "id": "ord-1785865991292",
+      "orderNumber": "ss202601",
+      "customerName": "Rishi Test",
+      "mobileNumber": "888888888",
+      "city": "Switzerland",
+      "items": [
+        {
+          "productId": "prod-1785865814534-22-470",
+          "sno": 20,
+          "productName": "Vel Murugan 120",
+          "qty": 3,
+          "imageUrl": "/media/image120.jpeg"
+        },
+        {
+          "productId": "prod-1785865814534-23-390",
+          "sno": 21,
+          "productName": "Siva Family 121",
+          "qty": 4,
+          "imageUrl": "/media/image121.jpeg"
+        },
+        {
+          "productId": "prod-1785865814534-24-297",
+          "sno": 22,
+          "productName": "Jesus 122",
+          "qty": 3,
+          "imageUrl": "/media/image122.jpeg"
+        },
+        {
+          "productId": "prod-1785865814534-25-743",
+          "sno": 23,
+          "productName": "Velankanni Matha 123",
+          "qty": 3,
+          "imageUrl": "/media/image123.jpeg"
+        }
+      ],
+      "totalQty": 13,
       "status": "Pending",
-      "createdAt": "2026-08-01T07:36:36.038Z",
+      "createdAt": "2026-08-04T17:53:11.292Z",
       "notes": ""
     }
   ],
@@ -246,5 +397,19 @@
   ],
   "settings": {
     "whatsappNumber": "9080917850"
-  }
+  },
+  "deletedProducts": [
+    {
+      "id": "prod-1785865814534-2-940",
+      "sno": 1,
+      "sortOrder": 1,
+      "name": "Eco Wooden Stand Tabletop Calendar",
+      "price": 0,
+      "imageUrl": "/placeholder-image.png",
+      "enabled": true,
+      "description": "Solid wood block calendar with monthly cards",
+      "category": "Wall Calendar",
+      "createdAt": "2026-08-04T17:50:14.534Z"
+    }
+  ]
 }

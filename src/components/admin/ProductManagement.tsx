@@ -5,6 +5,7 @@ import {
   ChevronLeft, ChevronRight, AlertTriangle, ToggleLeft, ToggleRight, X
 } from 'lucide-react';
 import { Product, Category } from '../../types';
+import { TrashModal } from './TrashModal';
 
 interface ProductManagementProps {
   products: Product[];
@@ -23,6 +24,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
 
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isTrashOpen, setIsTrashOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -335,6 +337,16 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
             </button>
           )}
 
+          {/* Trash Bin Button */}
+          <button
+            onClick={() => setIsTrashOpen(true)}
+            className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl border border-slate-300 shadow-xs flex items-center gap-1.5 transition-all"
+            title="View Deleted Products"
+          >
+            <Trash2 className="w-4 h-4 text-red-500" />
+            <span>Trash Bin</span>
+          </button>
+
           {/* Add Product Button */}
           <button
             id="btn-add-product-modal"
@@ -347,6 +359,13 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
         </div>
 
       </div>
+
+      {/* TRASH MODAL */}
+      <TrashModal
+        isOpen={isTrashOpen}
+        onClose={() => setIsTrashOpen(false)}
+        onRefresh={onRefresh}
+      />
 
       {/* Products Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
