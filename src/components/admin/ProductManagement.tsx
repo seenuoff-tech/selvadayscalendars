@@ -108,12 +108,11 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     setFormError('');
   };
 
-  // Handle Image File Upload (Convert to Base64)
   const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setFormError('Image size exceeds 5MB limit. Please select a smaller image.');
+      if (file.size > 3 * 1024 * 1024) {
+        setFormError('Image size exceeds 3MB limit. Please select a smaller image.');
         return;
       }
       const reader = new FileReader();
@@ -177,17 +176,36 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     }
 
     setIsSubmitting(true);
-
-    const payload = {
-      name: formData.name.trim(),
-      price: formData.price ? Number(formData.price) : 0,
-      imageUrl: formData.imageUrl.trim() || 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=300&q=80',
-      category: formData.category,
-      description: formData.description.trim(),
-      enabled: formData.enabled,
-    };
+    let finalImageUrl = formData.imageUrl.trim();
 
     try {
+      // Upload base64 image to media endpoint first to prevent TEXT column overflow
+      if (finalImageUrl.startsWith('data:image')) {
+        const filename = `prod-${Date.now()}.png`;
+        const uploadRes = await fetch('/api/media', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename, base64: finalImageUrl }),
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.success) {
+          finalImageUrl = uploadData.url;
+        } else {
+          setFormError(uploadData.message || 'Failed to upload image.');
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      const payload = {
+        name: formData.name.trim(),
+        price: formData.price ? Number(formData.price) : 0,
+        imageUrl: finalImageUrl || 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=300&q=80',
+        category: formData.category,
+        description: formData.description.trim(),
+        enabled: formData.enabled,
+      };
+
       let res;
       if (editingProduct) {
         res = await fetch(`/api/products/${editingProduct.id}`, {
