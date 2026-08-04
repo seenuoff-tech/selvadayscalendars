@@ -641,15 +641,25 @@ async function getOrdersList(): Promise<Order[]> {
         return rows.map((r: any) => {
           let parsedItems = [];
           try {
-            if (typeof r.items === "string") {
-              parsedItems = JSON.parse(r.items);
-            } else if (Buffer.isBuffer(r.items)) {
-              parsedItems = JSON.parse(r.items.toString('utf8'));
+            if (!r.items) {
+              parsedItems = [];
+            } else if (typeof r.items === "string") {
+              let parsed = JSON.parse(r.items);
+              while (typeof parsed === "string") {
+                parsed = JSON.parse(parsed);
+              }
+              parsedItems = Array.isArray(parsed) ? parsed : [parsed];
+            } else if (Buffer.isBuffer(r.items) || r.items instanceof Uint8Array) {
+              const str = Buffer.isBuffer(r.items) ? r.items.toString('utf8') : new TextDecoder().decode(r.items);
+              let parsed = JSON.parse(str);
+              while (typeof parsed === "string") {
+                parsed = JSON.parse(parsed);
+              }
+              parsedItems = Array.isArray(parsed) ? parsed : [parsed];
             } else if (Array.isArray(r.items)) {
               parsedItems = r.items;
-            } else if (r.items && typeof r.items === "object") {
-              // In case it's a JSON type column returning a parsed object directly
-              parsedItems = Array.isArray(r.items) ? r.items : [r.items];
+            } else if (typeof r.items === "object") {
+              parsedItems = [r.items];
             }
           } catch (e) {
             console.error("Failed to parse items for order", r.id, e);
