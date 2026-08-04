@@ -383,8 +383,7 @@ export const InvoiceGeneratorModal: React.FC<InvoiceGeneratorModalProps> = ({ or
           </button>
           <button
             onClick={generatePDF}
-            disabled={subtotal === 0}
-            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl shadow-md transition-all flex items-center gap-2"
+            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-md transition-all flex items-center gap-2"
           >
             <Download className="w-4 h-4" />
             Generate & Download PDF
