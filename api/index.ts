@@ -554,19 +554,37 @@ async function getOrdersList(): Promise<Order[]> {
       await ensureOrderTable();
       const [rows]: any = await pool.query("SELECT * FROM orders ORDER BY createdAt DESC");
       if (rows && Array.isArray(rows)) {
-        return rows.map((r: any) => ({
-          id: String(r.id),
-          orderNumber: String(r.orderNumber),
-          customerName: String(r.customerName),
-          mobileNumber: String(r.mobileNumber),
-          city: String(r.city || ""),
-          items: typeof r.items === "string" ? JSON.parse(r.items) : (r.items || []),
-          totalQty: Number(r.totalQty) || 0,
-          totalPrice: Number(r.totalPrice) || 0,
-          status: r.status || "Pending",
-          createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString(),
-          notes: String(r.notes || "")
-        }));
+        return rows.map((r: any) => {
+          let parsedItems = [];
+          try {
+            if (typeof r.items === "string") {
+              parsedItems = JSON.parse(r.items);
+            } else if (Buffer.isBuffer(r.items)) {
+              parsedItems = JSON.parse(r.items.toString('utf8'));
+            } else if (Array.isArray(r.items)) {
+              parsedItems = r.items;
+            } else if (r.items && typeof r.items === "object") {
+              // In case it's a JSON type column returning a parsed object directly
+              parsedItems = Array.isArray(r.items) ? r.items : [r.items];
+            }
+          } catch (e) {
+            console.error("Failed to parse items for order", r.id, e);
+          }
+
+          return {
+            id: String(r.id),
+            orderNumber: String(r.orderNumber),
+            customerName: String(r.customerName),
+            mobileNumber: String(r.mobileNumber),
+            city: String(r.city || ""),
+            items: parsedItems,
+            totalQty: Number(r.totalQty) || 0,
+            totalPrice: Number(r.totalPrice) || 0,
+            status: r.status || "Pending",
+            createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString(),
+            notes: String(r.notes || "")
+          };
+        });
       }
     } catch (err) {
       console.error("TiDB fetch orders error:", err);
