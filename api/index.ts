@@ -626,6 +626,18 @@ async function ensureOrderTable() {
         notes TEXT
       )
     `);
+
+    // Add missing columns for tables created before these columns existed
+    const alterColumns = [
+      "ALTER TABLE orders ADD COLUMN items LONGTEXT",
+      "ALTER TABLE orders ADD COLUMN notes TEXT",
+      "ALTER TABLE orders ADD COLUMN totalPrice DECIMAL(10,2) DEFAULT 0",
+      "ALTER TABLE orders ADD COLUMN city VARCHAR(255)",
+    ];
+    for (const sql of alterColumns) {
+      try { await pool.query(sql); } catch (_) { /* column already exists, ignore */ }
+    }
+
     isOrderTableInitialized = true;
   } catch (err) {
     console.error("Failed to create orders table in TiDB:", err);
