@@ -60,7 +60,7 @@ async function getProductsList(): Promise<Product[]> {
   if (pool) {
     try {
       await ensureDBSeeded();
-      const [rows]: any = await pool.query("SELECT * FROM products ORDER BY sortOrder ASC, sno ASC");
+      const [rows]: any = await pool.query("SELECT * FROM products WHERE is_deleted = 0 ORDER BY sortOrder ASC, sno ASC");
       if (rows && Array.isArray(rows)) {
         return rows.map((r: any, idx: number) => ({
           ...r,
@@ -144,6 +144,12 @@ async function ensureDBSeeded() {
         createdAt DATETIME
       )
     `);
+
+    try {
+      await pool.query("ALTER TABLE products ADD COLUMN is_deleted BOOLEAN DEFAULT 0");
+    } catch (e) {
+      // ignore if already exists
+    }
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS settings (
@@ -318,7 +324,7 @@ const handleBulkDeleteApi = async (req: express.Request, res: express.Response) 
     try {
       await ensureDBSeeded();
       const placeholders = ids.map(() => "?").join(",");
-      await pool.query(`DELETE FROM products WHERE id IN (${placeholders})`, ids);
+      await pool.query(`UPDATE products SET is_deleted = 1 WHERE id IN (${placeholders})`, ids);
     } catch (err) {
       console.error("TiDB bulk delete error:", err);
     }
@@ -347,7 +353,7 @@ const handleDeleteProductApi = async (req: express.Request, res: express.Respons
   if (pool) {
     try {
       await ensureDBSeeded();
-      await pool.query("DELETE FROM products WHERE id = ?", [id]);
+      await pool.query("UPDATE products SET is_deleted = 1 WHERE id = ?", [id]);
     } catch (err) {
       console.error("TiDB delete error:", err);
     }
@@ -360,6 +366,84 @@ const handleDeleteProductApi = async (req: express.Request, res: express.Respons
 
 app.delete("/api/products/:id", handleDeleteProductApi);
 app.post("/api/products/delete/:id", handleDeleteProductApi);
+
+// TRASH APIS
+app.get("/api/products/trash", async (req, res) => {
+  if (pool) {
+    try {
+      await ensureDBSeeded();
+      const [rows]: any = await pool.query("SELECT * FROM products WHERE is_deleted = 1 ORDER BY sortOrder ASC");
+      if (rows && Array.isArray(rows)) {
+        const deletedProducts = rows.map((r: any, idx: number) => ({
+          ...r,
+          sno: idx + 1,
+          sortOrder: idx + 1,
+          enabled: Boolean(r.enabled),
+          price: Number(r.price) || 0
+        }));
+        return res.json({ success: true, deletedProducts });
+      }
+    } catch (err) {
+      console.error("TiDB trash fetch error:", err);
+    }
+  }
+  // Fallback for memory (not persistent across Vercel invocations)
+  const deletedProds = defaultProducts.filter(p => globalDeletedIds.has(p.id));
+  res.json({ success: true, deletedProducts: deletedProds });
+});
+
+app.post("/api/products/trash/restore/:id", async (req, res) => {
+  const { id } = req.params;
+  globalDeletedIds.delete(id);
+
+  if (pool) {
+    try {
+      await ensureDBSeeded();
+      await pool.query("UPDATE products SET is_deleted = 0 WHERE id = ?", [id]);
+    } catch (err) {
+      console.error("TiDB restore error:", err);
+    }
+  }
+  
+  // Refetch remaining deleted products
+  let deletedProducts = [];
+  if (pool) {
+    const [rows]: any = await pool.query("SELECT * FROM products WHERE is_deleted = 1 ORDER BY sortOrder ASC");
+    if (rows) deletedProducts = rows;
+  }
+  res.json({ success: true, message: "Product restored", deletedProducts });
+});
+
+app.delete("/api/products/trash/permanent/:id", async (req, res) => {
+  const { id } = req.params;
+  if (pool) {
+    try {
+      await ensureDBSeeded();
+      await pool.query("DELETE FROM products WHERE id = ? AND is_deleted = 1", [id]);
+    } catch (err) {
+      console.error("TiDB permanent delete error:", err);
+    }
+  }
+  
+  let deletedProducts = [];
+  if (pool) {
+    const [rows]: any = await pool.query("SELECT * FROM products WHERE is_deleted = 1 ORDER BY sortOrder ASC");
+    if (rows) deletedProducts = rows;
+  }
+  res.json({ success: true, message: "Product permanently deleted", deletedProducts });
+});
+
+app.post("/api/products/trash/empty", async (req, res) => {
+  if (pool) {
+    try {
+      await ensureDBSeeded();
+      await pool.query("DELETE FROM products WHERE is_deleted = 1");
+    } catch (err) {
+      console.error("TiDB empty trash error:", err);
+    }
+  }
+  res.json({ success: true, message: "Trash emptied", deletedProducts: [] });
+});
 
 let isCategoryTableInitialized = false;
 const globalDeletedCategoryIds = new Set<string>();
