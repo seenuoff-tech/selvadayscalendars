@@ -154,7 +154,8 @@ export default function App() {
         productName: p.name,
         qty: quantities[p.id],
         unitPrice: p.price,
-        imageUrl: p.imageUrl,
+        // Do NOT include imageUrl here — base64 images bloat the payload
+        // and push it over Vercel's 4.5MB serverless body limit
       }));
 
     if (selectedItems.length === 0) {

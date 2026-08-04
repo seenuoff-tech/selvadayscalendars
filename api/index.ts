@@ -701,25 +701,35 @@ app.post("/api/orders", async (req, res) => {
     return res.status(400).json({ success: false, message: "Customer Name & Mobile Number are required" });
   }
 
-  const orderNum = `ORD-2026-${Math.floor(100 + Math.random() * 900)}`;
-  const totalQty = items?.reduce((sum: number, item: any) => sum + (item.qty || 0), 0) || 0;
-  const totalPrice = items?.reduce((sum: number, item: any) => sum + ((item.qty || 0) * (item.unitPrice || 0)), 0) || 0;
+  // Sanitize items: strip large fields like imageUrl from each item
+  const safeItems = Array.isArray(items)
+    ? items.map((item: any) => ({
+        productId: item.productId || "",
+        sno: item.sno || 0,
+        productName: item.productName || "",
+        qty: Number(item.qty) || 0,
+        unitPrice: Number(item.unitPrice) || 0,
+      }))
+    : [];
+
+  const ts = Date.now();
+  const orderNum = `ORD-2026-${Math.floor(100 + Math.random() * 900)}-${ts.toString().slice(-4)}`;
+  const totalQty = safeItems.reduce((sum: number, item: any) => sum + (item.qty || 0), 0);
+  const totalPrice = safeItems.reduce((sum: number, item: any) => sum + ((item.qty || 0) * (item.unitPrice || 0)), 0);
 
   const newOrder: Order = {
-    id: `ord-${Date.now()}`,
+    id: `ord-${ts}`,
     orderNumber: orderNum,
     customerName,
     mobileNumber,
     city: city || "",
-    items: items || [],
+    items: safeItems,
     totalQty,
     totalPrice,
     status: "Pending",
     createdAt: new Date().toISOString(),
     notes: notes || ""
   };
-
-  memoryOrders.unshift(newOrder);
 
   if (pool) {
     try {
@@ -740,9 +750,17 @@ app.post("/api/orders", async (req, res) => {
           newOrder.notes
         ]
       );
-    } catch (err) {
+    } catch (err: any) {
       console.error("TiDB create order error:", err);
+      // Don't silently fail — report to client so we know DB is down
+      return res.status(500).json({
+        success: false,
+        message: `Database error: ${err?.message || 'Unknown error'}. Please try again.`
+      });
     }
+  } else {
+    // No DB configured — use memory as fallback (not persistent on Vercel)
+    memoryOrders.unshift(newOrder);
   }
 
   res.json({ success: true, order: newOrder });
