@@ -14,6 +14,24 @@ export const InvoiceGeneratorModal: React.FC<InvoiceGeneratorModalProps> = ({ or
   const [gstPercentage, setGstPercentage] = useState<number>(18);
   const [prices, setPrices] = useState<Record<string, number>>({});
 
+  // For old orders with empty items, allow manual rows
+  const [manualRows, setManualRows] = useState<{ id: string; name: string; qty: number; price: number }[]>([]);
+
+  const addManualRow = () => {
+    setManualRows(prev => [...prev, { id: `manual-${Date.now()}`, name: '', qty: 1, price: 0 }]);
+  };
+
+  const updateManualRow = (id: string, field: string, value: string | number) => {
+    setManualRows(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
+  };
+
+  const removeManualRow = (id: string) => {
+    setManualRows(prev => prev.filter(r => r.id !== id));
+  };
+
+  // Combine order items + manual rows for calculations
+  const hasOrderItems = Array.isArray(order.items) && order.items.length > 0;
+
   const handlePriceChange = (productId: string, value: string) => {
     const numValue = parseFloat(value);
     setPrices(prev => ({
@@ -23,10 +41,12 @@ export const InvoiceGeneratorModal: React.FC<InvoiceGeneratorModalProps> = ({ or
   };
 
   const calculateSubtotal = () => {
-    return order.items.reduce((sum, item) => {
+    const orderTotal = (order.items || []).reduce((sum, item) => {
       const price = prices[item.productId] || 0;
       return sum + (price * item.qty);
     }, 0);
+    const manualTotal = manualRows.reduce((sum, r) => sum + (r.price * r.qty), 0);
+    return orderTotal + manualTotal;
   };
 
   const subtotal = calculateSubtotal();
@@ -138,23 +158,29 @@ export const InvoiceGeneratorModal: React.FC<InvoiceGeneratorModalProps> = ({ or
     // PRODUCT TABLE
     // ==========================================
     const tableColumn = ["S.NO", "Product Name", "Qty", "Unit Price", "GST %", "Amount"];
-    const tableRows = order.items.map((item, index) => {
-      const price = prices[item.productId] || 0;
-      const total = price * item.qty;
-      return [
+    const allItems = [
+      ...(order.items || []).map((item, index) => [
         (index + 1).toString(),
         item.productName,
         item.qty.toString(),
-        price.toFixed(2),
+        (prices[item.productId] || 0).toFixed(2),
         `${gstPercentage}%`,
-        total.toFixed(2)
-      ];
-    });
+        ((prices[item.productId] || 0) * item.qty).toFixed(2)
+      ]),
+      ...manualRows.map((r, i) => [
+        ((order.items || []).length + i + 1).toString(),
+        r.name || `Product ${i + 1}`,
+        r.qty.toString(),
+        r.price.toFixed(2),
+        `${gstPercentage}%`,
+        (r.price * r.qty).toFixed(2)
+      ])
+    ];
 
     autoTable(doc, {
       startY: currentY,
       head: [tableColumn],
-      body: tableRows,
+      body: allItems,
       theme: 'grid',
       headStyles: { 
         fillColor: primaryColor,
@@ -325,8 +351,23 @@ export const InvoiceGeneratorModal: React.FC<InvoiceGeneratorModalProps> = ({ or
 
             {/* Right: Products Pricing */}
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-              <h3 className="font-bold text-slate-800 text-sm mb-4">Enter Product Prices</h3>
-              
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-slate-800 text-sm">Enter Product Prices</h3>
+                <button
+                  onClick={addManualRow}
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-colors"
+                >
+                  + Add Row
+                </button>
+              </div>
+
+              {!hasOrderItems && manualRows.length === 0 && (
+                <div className="text-center py-6 text-slate-400 text-xs">
+                  <p className="font-semibold text-amber-600">⚠️ No products found for this order.</p>
+                  <p className="mt-1">This may be an old order. Click <strong>"+ Add Row"</strong> to manually add products.</p>
+                </div>
+              )}
+
               <div className="overflow-x-auto flex-1">
                 <table className="w-full text-left">
                   <thead>
@@ -335,19 +376,16 @@ export const InvoiceGeneratorModal: React.FC<InvoiceGeneratorModalProps> = ({ or
                       <th className="pb-2 font-semibold text-center">Qty</th>
                       <th className="pb-2 font-semibold w-24">Unit Price</th>
                       <th className="pb-2 font-semibold text-right">Total</th>
+                      <th className="pb-2 w-6"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {order.items.map((item, idx) => {
+                    {(order.items || []).map((item, idx) => {
                       const price = prices[item.productId] || 0;
                       return (
                         <tr key={idx} className="text-sm">
-                          <td className="py-3 font-medium text-slate-700">
-                            {item.productName}
-                          </td>
-                          <td className="py-3 text-center text-slate-600">
-                            {item.qty}
-                          </td>
+                          <td className="py-3 font-medium text-slate-700">{item.productName}</td>
+                          <td className="py-3 text-center text-slate-600">{item.qty}</td>
                           <td className="py-3">
                             <input
                               type="number"
@@ -358,12 +396,47 @@ export const InvoiceGeneratorModal: React.FC<InvoiceGeneratorModalProps> = ({ or
                               className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                             />
                           </td>
-                          <td className="py-3 text-right font-bold text-slate-800">
-                            Rs {(price * item.qty).toFixed(2)}
-                          </td>
+                          <td className="py-3 text-right font-bold text-slate-800">Rs {(price * item.qty).toFixed(2)}</td>
+                          <td></td>
                         </tr>
-                      )
+                      );
                     })}
+                    {manualRows.map((row) => (
+                      <tr key={row.id} className="text-sm bg-indigo-50/40">
+                        <td className="py-2">
+                          <input
+                            type="text"
+                            placeholder="Product name"
+                            value={row.name}
+                            onChange={(e) => updateManualRow(row.id, 'name', e.target.value)}
+                            className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                          />
+                        </td>
+                        <td className="py-2 px-1">
+                          <input
+                            type="number"
+                            min="1"
+                            value={row.qty}
+                            onChange={(e) => updateManualRow(row.id, 'qty', Number(e.target.value))}
+                            className="w-14 border border-slate-300 rounded-lg px-2 py-1.5 text-sm text-center focus:ring-2 focus:ring-indigo-500 outline-none"
+                          />
+                        </td>
+                        <td className="py-2">
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="0.00"
+                            value={row.price || ''}
+                            onChange={(e) => updateManualRow(row.id, 'price', Number(e.target.value))}
+                            className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                          />
+                        </td>
+                        <td className="py-2 text-right font-bold text-slate-800">Rs {(row.price * row.qty).toFixed(2)}</td>
+                        <td className="py-2 pl-1">
+                          <button onClick={() => removeManualRow(row.id)} className="text-red-400 hover:text-red-600 text-xs font-bold">✕</button>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
