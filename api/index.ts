@@ -725,7 +725,21 @@ app.post("/api/orders", async (req, res) => {
     : [];
 
   const ts = Date.now();
-  const orderNum = `ORD-2026-${Math.floor(100 + Math.random() * 900)}-${ts.toString().slice(-4)}`;
+
+  // Generate sequential order number: SS202601, SS202602, SS202603...
+  let orderNum = `SS${new Date().getFullYear()}01`;
+  if (pool) {
+    try {
+      const [countRows]: any = await pool.query("SELECT COUNT(*) as total FROM orders");
+      const nextSeq = (Number(countRows[0]?.total) || 0) + 1;
+      orderNum = `SS${new Date().getFullYear()}${String(nextSeq).padStart(2, '0')}`;
+    } catch (_) {
+      orderNum = `SS${new Date().getFullYear()}${ts.toString().slice(-4)}`;
+    }
+  } else {
+    orderNum = `SS${new Date().getFullYear()}${String(memoryOrders.length + 1).padStart(2, '0')}`;
+  }
+
   const totalQty = safeItems.reduce((sum: number, item: any) => sum + (item.qty || 0), 0);
   const totalPrice = safeItems.reduce((sum: number, item: any) => sum + ((item.qty || 0) * (item.unitPrice || 0)), 0);
 
